@@ -51,3 +51,25 @@ Nosso controlador é baseado nos seguintes artigos:
 * [Artigo sobre jogos fast paced do Gambetta](http://gabrielgambetta.com/)
 * [Unity LLAPI](http://www.robotmonkeybrain.com/good-enough-guide-to-unitys-unet-transport-layer-llapi/)
 * [Unity HLAPI](http://docs.unity3d.com/Manual/UNetUsingHLAPI.html)
+
+## Contributing
+Lets talk about code now. Our controller is currently under heavy development and is subject to be a mess. Even though this is a fact, you cannot use this as an excuse to send bad code. I won't accept any pushes that are not well documented and with each commit well written. Our (Me and every contributor) directives will be the following:
+
+* Commit often but only if you finished something.
+* Commits don't need to be 'buildable' but they can't contain major errors also.
+* Commit messages must be descriptive of the work done.
+* Pushes are not often, we expect less than 10 per day.
+* Pushes need to have some work on them (meaningful pushes).
+* Comment your stuff. All of it.
+* Document your stuff. All of it.
+
+### ptBR
+Vamos falar de código agora. Nosso controlador está sobre desenvolvimento pesado e está sujeito a estar uma bagunça. Mesmo que isso seja um fato, você não pode usar isso como desculpa para enviar código ruim. Eu não vou aceitar pushes sem documentação apropriada ou sem mensagens de commit bem escritas. Serão nossas (eu e vocês) diretivas:
+
+* Deem commits frequentemente mas só quando tiverem completado trabalho
+* Commits não precisam ser 'buildáveis' mas não podem conter erros grosseiros também
+* Mensagens de commit precisam descrever o trabalho realizado
+* Não deem pushes demais, vamos esperar menos do que 10 por dia
+* Pushes devem ter trabalho feito, devem ser significativos.
+* Comentem todo seu código.
+* Documentem todo seu código.
