@@ -223,6 +223,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             // Store transform values
             Transform trans = transform;
+            // Store collision values
+            CollisionFlags lastFlag = m_CollisionFlags;
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
@@ -257,7 +259,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     // Create reconciliation entry
                     ReconciliationEntry entry = new ReconciliationEntry();
                     entry.inputs = inputs;
-                    entry.lastFlags = m_CollisionFlags;
+                    entry.lastFlags = lastFlag;
                     entry.trans = trans;
                     AddReconciliation(entry);
 
@@ -308,7 +310,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     dataStep = 0;
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
-                        RpcClientReceivePosition(timestamp, transform.position, m_MoveDir, m_CollisionFlags);
+                        RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
                         Debug.Log("Sent host pos");
                     }
                 }
@@ -362,8 +364,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 if (dataStep > GetNetworkSendInterval()) {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || Quaternion.Angle(transform.rotation, lastCharacterRotation) > 0 || Quaternion.Angle(m_firstPersonCharacter.rotation, lastCameraRotation) > 0) {
-                        RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir, m_CollisionFlags);
-                        Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
+                        RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir);
+                        //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
                 }
@@ -434,7 +436,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="pos">This is the position the server calculated for the input at that time.</param>
     /// <param name="inputStamp">This is the timestamp when the client sent this input originally.</param>
     [ClientRpc]
-    private void RpcClientReceivePosition(long inputStamp, Vector3 pos, Vector3 movementVector, CollisionFlags sflags) {
+    private void RpcClientReceivePosition(long inputStamp, Vector3 pos, Vector3 movementVector) {
         if (reconciliation && isLocalPlayer) {// RECONCILIATION for owner players
             //Check if this stamp is in the list
             if (reconciliationList.Count == 0) {
@@ -451,7 +453,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
             else {
                 //Reconciliation starting
-                Debug.Log("Stamp received from server: "+inputStamp);
+                //Debug.Log("Stamp received from server: "+inputStamp);
 
                 //Get the oldest recorded input from the player
                 ReconciliationEntry firstEntry = reconciliationList[0];
@@ -481,12 +483,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Apply de received y movement
                 m_MoveDir.y = movementVector.y;
 
-                //Get the server lastest collision flags
-                m_CollisionFlags = sflags;
-
                 // Reapply all the inputs that aren't processed by the server yet.
                 if (reconciliationList.Count > 0) {
                     Debug.Log("The initial reconciliated position is: " + reconciliationList[0].trans.position);
+                    //Get the lastest collision flags
+                    m_CollisionFlags = reconciliationList[0].lastFlags;
+
                     float speed = 0f;
                     foreach (ReconciliationEntry e in reconciliationList) {
                         Inputs i = e.inputs;
