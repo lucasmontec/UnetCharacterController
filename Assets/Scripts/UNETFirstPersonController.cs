@@ -274,7 +274,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 if (dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
 
-                    Debug.Log("Sending messages to server");
+                    //Debug.Log("Sending messages to server");
+                    int toSend = inputsList.Count;
                     //Send input to the server
                     while (inputsList.Count > 0) {
                         //Send the inputs done locally
@@ -290,7 +291,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
                         }
                     }
-                    Debug.Log("Messages sent to server");
+                    Debug.Log(toSend + " messages sent to server");
                     //Clear the input list
                     inputsList.Clear();
                 }
@@ -447,8 +448,13 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
             }
             else {
+                //Reconciliation starting
+                Debug.Log("Stamp received from server: "+inputStamp);
+
                 //Get the oldest recorded input from the player
                 ReconciliationEntry firstEntry = reconciliationList[0];
+                Debug.Log("The local reconciliation lists starts at: " + firstEntry.inputs.timeStamp);
+                Debug.Log("The current position (lastest local position) is: " + transform.position);
 
                 //If the incoming position is too old, ignore
                 if (inputStamp < firstEntry.inputs.timeStamp) {
@@ -488,6 +494,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         ReconciliatePlayerMovement(speed, i.jump, e.trans);
                     }
                 }
+
+                Debug.Log("The final reconciliated position is: " + transform.position);
 
                 //Restore collision flags
                 m_CollisionFlags = cflags;
