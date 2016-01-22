@@ -457,10 +457,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 //Get the oldest recorded input from the player
                 ReconciliationEntry firstEntry = reconciliationList[0];
-                Debug.Log("The local reconciliation lists starts at: " + firstEntry.inputs.timeStamp);
-                Debug.Log("The current position (local start position - before prediction) is: " + firstEntry.trans.position);
-                Debug.Log("The position the server sent is: " + pos);
-                Debug.Log("The current position (local end position - after prediction) is: " + transform.position);
+
+                //Debug.Log("The local reconciliation lists starts at: " + firstEntry.inputs.timeStamp);
+                //Debug.Log("The current position (local start position - before prediction) is: " + firstEntry.trans.position);
+                //Debug.Log("The position the server sent is: " + pos);
+                //Debug.Log("The current position (local end position - after prediction) is: " + transform.position);
 
                 //If the incoming position is too old, ignore
                 if (inputStamp < firstEntry.inputs.timeStamp) {
@@ -488,6 +489,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     Debug.Log("The initial reconciliated position is: " + reconciliationList[0].trans.position);
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
+
+                    float ruim = Vector3.Distance(reconciliationList[0].trans.position, pos);
+                    if(ruim > 0.01f)
+                        Debug.Log("DEU RUIM " + ruim);
 
                     float speed = 0f;
                     foreach (ReconciliationEntry e in reconciliationList) {
