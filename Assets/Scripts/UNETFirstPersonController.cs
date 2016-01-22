@@ -506,9 +506,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         m_Input = i.wasd;
                         m_IsWalking = i.walk;
                         m_isCrouching = i.crouch;
-                        /*if (i.rotate) {
-                            e.trans.rotation = Quaternion.Euler(e.trans.rotation.x, i.yaw, e.trans.rotation.z);
-                        }*/
 
                         CalcSpeed(out speed);
 
