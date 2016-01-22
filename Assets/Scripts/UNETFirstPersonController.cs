@@ -71,7 +71,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     //Reconciliation list - Client side (excludes the host client)
     private int maxReconciliationEntries = 250;
-    private float currentReconciliationStamp = 0f;
+    private long currentReconciliationStamp = 0;
 
     //Local interpolation
     //The local authority on clients interpolate when correcting large diffs
@@ -434,7 +434,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="pos">This is the position the server calculated for the input at that time.</param>
     /// <param name="inputStamp">This is the timestamp when the client sent this input originally.</param>
     [ClientRpc]
-    private void RpcClientReceivePosition(float inputStamp, Vector3 pos, Vector3 movementVector, CollisionFlags sflags) {
+    private void RpcClientReceivePosition(long inputStamp, Vector3 pos, Vector3 movementVector, CollisionFlags sflags) {
         if (reconciliation && isLocalPlayer) {// RECONCILIATION for owner players
             //Check if this stamp is in the list
             if (reconciliationList.Count == 0) {
