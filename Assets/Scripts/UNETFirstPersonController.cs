@@ -105,7 +105,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
     //Local reconciliation (authority player)
     private struct ReconciliationEntry {
         public Inputs inputs;
-        public Transform trans;
+        public Vector3 position;
+        public Quaternion rotation;
         public CollisionFlags lastFlags;
     }
     private List<ReconciliationEntry> reconciliationList = new List<ReconciliationEntry>();
@@ -222,7 +223,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
             bool sendJump = m_Jump;
 
             // Store transform values
-            Transform trans = transform;
+            Vector3 prevPosition = transform.position;
+            Quaternion prevRotation = transform.rotation;
             // Store collision values
             CollisionFlags lastFlag = m_CollisionFlags;
 
@@ -260,7 +262,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     ReconciliationEntry entry = new ReconciliationEntry();
                     entry.inputs = inputs;
                     entry.lastFlags = lastFlag;
-                    entry.trans = trans;
+                    entry.position = prevPosition;
+                    entry.rotation = prevRotation;
                     AddReconciliation(entry);
 
                     //Clear the jump to send
@@ -490,22 +493,26 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 // Reapply all the inputs that aren't processed by the server yet.
                 int count = 0;
                 if (reconciliationList.Count > 0) {
-                    debugError += "The first position for reconciliation is: " + reconciliationList[0].trans.position + "\n";
+                    debugError += "The first position for reconciliation is: " + reconciliationList[0].position + "\n";
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
 
-                    serverCalculationError = Vector3.Distance(reconciliationList[0].trans.position, pos);
+                    serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
 
                     float speed = 0f;
+                    ReconciliationEntry first = reconciliationList[0];
                     foreach (ReconciliationEntry e in reconciliationList) {
                         Inputs i = e.inputs;
                         m_Input = i.wasd;
                         m_IsWalking = i.walk;
                         m_isCrouching = i.crouch;
+                        /*if (i.rotate) {
+                            e.trans.rotation = Quaternion.Euler(e.trans.rotation.x, i.yaw, e.trans.rotation.z);
+                        }*/
 
                         CalcSpeed(out speed);
 
-                        ReconciliatePlayerMovement(speed, i.jump, e.trans);
+                        ReconciliatePlayerMovement(speed, i.jump, e.position, e.rotation);
                         debugError += "("+(count++)+")Intermediate rec position: " + transform.position+"\n";
                     }
                 }
@@ -513,14 +520,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 debugError += "The final reconciliated position is: " + transform.position+"\n";
                 debugError += "The predicted position was: " + predicted + "\n";
 
+                float threshold = 0.005f;
+
                 //Check if the server calculated the position in a wrong way
-                if (serverCalculationError > 0f) {
-                    Debug.Log("[Server position simulation failure] Error (distance):\n" + serverCalculationError);
+                if (serverCalculationError > 0.005f) {
+                    Debug.Log("[Server position simulation failure] Error (distance): " + serverCalculationError);
                 }
 
                 //Check if predicted is different from renconciliated
                 float recError = Vector3.Distance(predicted, transform.position);
-                float threshold = 0.005f;
                 if (recError > threshold) {
                     debugError += "Total error: " + recError+"\n";
                     debugError += "(Logging only errors above: " + threshold+")";
@@ -588,13 +596,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     /// <param name="shouldJump">If the player is jumping - Same as m_Jump, but without overriding that variable</param>
-    private void ReconciliatePlayerMovement(float speed, bool shouldJump, Transform trans) {
+    private void ReconciliatePlayerMovement(float speed, bool shouldJump, Vector3 position, Quaternion rotation) {
+        Vector3 right = rotation * Vector3.right;
+        Vector3 forward = rotation * Vector3.forward;
         // Always move along the camera forward as it is the direction that it being aimed at
-        Vector3 desiredMove = trans.forward * VerticalMovement(m_Input[0], m_Input[2]) + trans.right * HorizontalMovement(m_Input[1], m_Input[3]);
+        Vector3 desiredMove = forward * VerticalMovement(m_Input[0], m_Input[2]) + right * HorizontalMovement(m_Input[1], m_Input[3]);
 
         // Get a normal for the surface that is being touched to move along it
         RaycastHit hitInfo;
-        Physics.SphereCast(trans.position, m_CharacterController.radius, Vector3.down, out hitInfo,
+        Physics.SphereCast(position, m_CharacterController.radius, Vector3.down, out hitInfo,
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
