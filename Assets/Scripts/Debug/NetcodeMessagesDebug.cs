@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// This class receives 
@@ -13,6 +14,7 @@ public class NetcodeMessagesDebug : Singleton<NetcodeMessagesDebug> {
     private int serverInputs;
     private int clientInputs;
 
+    List<Inputs> results = new List<Inputs>();
     // If the game is over.
     private bool over;
 

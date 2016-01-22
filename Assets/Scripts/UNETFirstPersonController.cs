@@ -6,6 +6,20 @@ using UnityStandardAssets.CrossPlatformInput;
 using UnityStandardAssets.Utility;
 using Random = UnityEngine.Random;
 
+// Input and results structs
+public struct Inputs {
+    public float yaw; // Y
+    public float pitch; // X
+    public bool[] wasd;
+    public bool move;
+    public bool walk;
+    public bool crouch;
+    public bool jump;
+    public bool rotate;
+
+    public float timeStamp;
+}
+
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 [NetworkSettings(channel = 0, sendInterval = 0.02f)]
@@ -66,20 +80,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private Boolean useLocalInterpolation = true;
     private Vector3 targetPosition;
     private float localInterpolationFactor = 10f;
-
-    // Input and results structs
-    private struct Inputs {
-        public float yaw; // Y
-        public float pitch; // X
-        public bool[] wasd;
-        public bool move;
-        public bool walk;
-        public bool crouch;
-        public bool jump;
-        public bool rotate;
-
-        public float timeStamp;
-    }
 
     // Velocity struct
     //public struct Velocity {
@@ -240,7 +240,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 bool moved = m_CharacterController.velocity.sqrMagnitude > 0 || m_Input[0] || m_Input[1]
                     || m_Input[2] || m_Input[3];
                 if (moved || sendJump || crouchChange || rotationChanged) {
-                    Debug.Log("W: " + m_Input[0] + " A: " + m_Input[1] + " S: " + m_Input[2] + " D: " + m_Input[3]);
+                    //Debug.Log("W: " + m_Input[0] + " A: " + m_Input[1] + " S: " + m_Input[2] + " D: " + m_Input[3]);
                     //Store all inputs generated between msgs to send to server
                     Inputs inputs = new Inputs();
                     inputs.yaw = transform.rotation.eulerAngles.y;
@@ -267,13 +267,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Clear rotation flag
                     rotationChanged = false;
 
-                    Debug.Log("InLst sz is: "+ inputsList.Count+ " Moved is: "+moved);
+                    //Debug.Log("InLst sz is: "+ inputsList.Count+ " Moved is: "+moved);
                 }
 
                 //Only send input at the network send interval
                 if (dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
 
+                    Debug.Log("Sending messages to server");
                     //Send input to the server
                     while (inputsList.Count > 0) {
                         //Send the inputs done locally
@@ -289,6 +290,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
                         }
                     }
+                    Debug.Log("Messages sent to server");
                     //Clear the input list
                     inputsList.Clear();
                 }
@@ -304,7 +306,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
                         RpcClientReceivePosition(timestamp, transform.position, m_MoveDir, m_CollisionFlags);
-                        //Debug.Log("Sent host pos");
+                        Debug.Log("Sent host pos");
                     }
                 }
                 dataStep += Time.fixedDeltaTime;
@@ -358,7 +360,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 if (dataStep > GetNetworkSendInterval()) {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || Quaternion.Angle(transform.rotation, lastCharacterRotation) > 0 || Quaternion.Angle(m_firstPersonCharacter.rotation, lastCameraRotation) > 0) {
                         RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir, m_CollisionFlags);
-                        //Debug.Log("Sent client pos "+dataStep);
+                        Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
                 }
@@ -450,15 +452,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 //If the incoming position is too old, ignore
                 if (inputStamp < firstEntry.inputs.timeStamp) {
-                    //Debug.Log("Ignored! "+ inputStamp+" first in list was "+ firstEntry.stamp);
+                    Debug.Log("Ignored! "+ inputStamp+" first in list was "+ firstEntry.inputs.timeStamp);
                     return;
                 }
 
+                int oldListSize = reconciliationList.Count;
                 //Remove all older stamps
                 reconciliationList.RemoveAll(
                     entry => entry.inputs.timeStamp <= inputStamp
                 );
-                //Debug.Log("Rmv reconciliation list size: " + reconciliationList.Count);
+                Debug.Log("Removed: " + (reconciliationList.Count - oldListSize) + ", reconciliation list size: " + reconciliationList.Count + ", old list size: " + oldListSize);
 
                 //Save current collision flags
                 CollisionFlags cflags = m_CollisionFlags;
