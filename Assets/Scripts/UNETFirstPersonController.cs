@@ -486,6 +486,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 // Reapply all the inputs that aren't processed by the server yet.
                 if (reconciliationList.Count > 0) {
+                    Debug.Log("The initial reconciliated position is: " + reconciliationList[0].trans.position);
                     float speed = 0f;
                     foreach (ReconciliationEntry e in reconciliationList) {
                         Inputs i = e.inputs;
