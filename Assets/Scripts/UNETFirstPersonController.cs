@@ -17,7 +17,7 @@ public struct Inputs {
     public bool jump;
     public bool rotate;
 
-    public float timeStamp;
+    public long timeStamp;
 }
 
 [RequireComponent(typeof(CharacterController))]
@@ -99,7 +99,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     //Reduce server and client simulation mismatch
     //This variable prevents the server from simulating a client when messages
     //are too late
-    private float lastMassageTime = 0f;
+    private long lastMassageTime = 0;
     private const float maxDelayBeforeServerSimStop = 0.2f;
 
     //Local reconciliation (authority player)
@@ -203,7 +203,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //If this is running at the local player (client with authoritative control or host client)
         //We run normal FPS controller (prediction)
         if (isLocalPlayer) {
-            float timestamp = Time.time;
+            long timestamp = System.DateTime.UtcNow.Ticks;
             //Store crouch input to send to server
             bool sendCrouch = m_isCrouching;
 
@@ -291,7 +291,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
                         }
                     }
-                    Debug.Log(toSend + " messages sent to server");
+                    if (toSend > 0) {
+                        Debug.Log(toSend + " messages sent to server");
+                    }
                     //Clear the input list
                     inputsList.Clear();
                 }
@@ -332,7 +334,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.wasd = new bool[] { false, false, false, false };
                     inputs.jump = false;
                     inputs.rotate = false;
-                    inputs.timeStamp = Time.time;
+                    inputs.timeStamp = System.DateTime.UtcNow.Ticks;
                 }
                 else {
                     inputs = inputsList.Dequeue();
@@ -378,7 +380,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// The stamp is the input time stamp for reconciliation.
     /// </summary>
     [Command(channel = 1)]
-    private void CmdProcessMovement(float stamp, bool[] wasd, bool walk, bool crouch, bool jump) {
+    private void CmdProcessMovement(long stamp, bool[] wasd, bool walk, bool crouch, bool jump) {
         if (inputsList.Count > maxInputs)
             return;   
         ServerProcessInput(stamp, wasd, walk, crouch, jump, false, 0f, 0f);
@@ -388,7 +390,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// Receives input variables to rotate the character in the server.
     /// </summary>
     [Command(channel = 1)]
-    private void CmdProcessRotation(float stamp, float pitch, float yaw) {
+    private void CmdProcessRotation(long stamp, float pitch, float yaw) {
         ServerProcessInput(stamp, new bool[]{ false, false, false, false }, false, false, false, true, pitch, yaw);
     }
 
@@ -396,7 +398,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// Receives input variables to move and rotate the character in the server.
     /// </summary>
     [Command(channel = 1)]
-    private void CmdProcessMovementAndRotation(float stamp, bool[] wasd, bool walk, bool crouch, bool jump, float pitch, float yaw) {
+    private void CmdProcessMovementAndRotation(long stamp, bool[] wasd, bool walk, bool crouch, bool jump, float pitch, float yaw) {
         ServerProcessInput(stamp, wasd, walk, crouch, jump, true, pitch, yaw);
     }
 
@@ -404,7 +406,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// Receives the movements and rotations input and process it. 
     /// </summary>
     [Server]
-    private void ServerProcessInput(float stamp, bool[] wasd, bool walk, bool crouch, bool jump, bool rotate, float pitch, float yaw) {
+    private void ServerProcessInput(long stamp, bool[] wasd, bool walk, bool crouch, bool jump, bool rotate, float pitch, float yaw) {
         //Create the inputs structure
         Inputs received = new Inputs();
         received.timeStamp = stamp;
@@ -423,7 +425,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //Debug.Log("Current input list size: " + inputsList.Count);
 
         //Store the last received message
-        lastMassageTime = Time.time;
+        lastMassageTime = System.DateTime.UtcNow.Ticks;
     }
 
     /// <summary>
@@ -454,7 +456,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Get the oldest recorded input from the player
                 ReconciliationEntry firstEntry = reconciliationList[0];
                 Debug.Log("The local reconciliation lists starts at: " + firstEntry.inputs.timeStamp);
-                Debug.Log("The current position (lastest local position) is: " + transform.position);
+                Debug.Log("The current position (local start position - before prediction) is: " + firstEntry.trans.position);
+                Debug.Log("The position the server sent is: " + pos);
+                Debug.Log("The current position (local end position - after prediction) is: " + transform.position);
 
                 //If the incoming position is too old, ignore
                 if (inputStamp < firstEntry.inputs.timeStamp) {
