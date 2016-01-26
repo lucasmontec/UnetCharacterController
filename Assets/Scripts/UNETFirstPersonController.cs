@@ -6,6 +6,20 @@ using UnityStandardAssets.CrossPlatformInput;
 using UnityStandardAssets.Utility;
 using Random = UnityEngine.Random;
 
+// Input and results structs
+public struct Inputs {
+    public float yaw; // Y
+    public float pitch; // X
+    public bool[] wasd;
+    public bool move;
+    public bool walk;
+    public bool crouch;
+    public bool jump;
+    public bool rotate;
+
+    public long timeStamp;
+}
+
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 [NetworkSettings(channel = 0, sendInterval = 0.02f)]
@@ -57,7 +71,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     //Reconciliation list - Client side (excludes the host client)
     private int maxReconciliationEntries = 250;
-    private float currentReconciliationStamp = 0f;
+    private long currentReconciliationStamp = 0;
 
     //Local interpolation
     //The local authority on clients interpolate when correcting large diffs
@@ -66,20 +80,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private Boolean useLocalInterpolation = true;
     private Vector3 targetPosition;
     private float localInterpolationFactor = 10f;
-
-    // Input and results structs
-    private struct Inputs {
-        public float yaw; // Y
-        public float pitch; // X
-        public bool[] wasd;
-        public bool move;
-        public bool walk;
-        public bool crouch;
-        public bool jump;
-        public bool rotate;
-
-        public float timeStamp;
-    }
 
     // Velocity struct
     //public struct Velocity {
@@ -99,13 +99,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
     //Reduce server and client simulation mismatch
     //This variable prevents the server from simulating a client when messages
     //are too late
-    private float lastMassageTime = 0f;
+    private long lastMassageTime = 0;
     private const float maxDelayBeforeServerSimStop = 0.2f;
 
     //Local reconciliation (authority player)
     private struct ReconciliationEntry {
         public Inputs inputs;
-        public Transform trans;
+        public Vector3 position;
+        public Quaternion rotation;
         public CollisionFlags lastFlags;
     }
     private List<ReconciliationEntry> reconciliationList = new List<ReconciliationEntry>();
@@ -203,7 +204,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //If this is running at the local player (client with authoritative control or host client)
         //We run normal FPS controller (prediction)
         if (isLocalPlayer) {
-            float timestamp = Time.time;
+            long timestamp = System.DateTime.UtcNow.Ticks;
             //Store crouch input to send to server
             bool sendCrouch = m_isCrouching;
 
@@ -222,7 +223,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
             bool sendJump = m_Jump;
 
             // Store transform values
-            Transform trans = transform;
+            Vector3 prevPosition = transform.position;
+            Quaternion prevRotation = transform.rotation;
+            // Store collision values
+            CollisionFlags lastFlag = m_CollisionFlags;
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
@@ -240,7 +244,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 bool moved = m_CharacterController.velocity.sqrMagnitude > 0 || m_Input[0] || m_Input[1]
                     || m_Input[2] || m_Input[3];
                 if (moved || sendJump || crouchChange || rotationChanged) {
-                    Debug.Log("W: " + m_Input[0] + " A: " + m_Input[1] + " S: " + m_Input[2] + " D: " + m_Input[3]);
+                    //Debug.Log("W: " + m_Input[0] + " A: " + m_Input[1] + " S: " + m_Input[2] + " D: " + m_Input[3]);
                     //Store all inputs generated between msgs to send to server
                     Inputs inputs = new Inputs();
                     inputs.yaw = transform.rotation.eulerAngles.y;
@@ -257,8 +261,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     // Create reconciliation entry
                     ReconciliationEntry entry = new ReconciliationEntry();
                     entry.inputs = inputs;
-                    entry.lastFlags = m_CollisionFlags;
-                    entry.trans = trans;
+                    entry.lastFlags = lastFlag;
+                    entry.position = prevPosition;
+                    entry.rotation = prevRotation;
                     AddReconciliation(entry);
 
                     //Clear the jump to send
@@ -267,28 +272,33 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Clear rotation flag
                     rotationChanged = false;
 
-                    Debug.Log("InLst sz is: "+ inputsList.Count+ " Moved is: "+moved);
+                    //Debug.Log("InLst sz is: "+ inputsList.Count+ " Moved is: "+moved);
                 }
 
                 //Only send input at the network send interval
                 if (dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
 
+                    //Debug.Log("Sending messages to server");
+                    int toSend = inputsList.Count;
                     //Send input to the server
                     while (inputsList.Count > 0) {
                         //Send the inputs done locally
                         Inputs i = inputsList.Dequeue();
                         if (i.move && i.rotate) {
-                            Debug.Log("Mov & Rot sent");
+                            //Debug.Log("Mov & Rot sent");
                            CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
                         } else if (i.move) {
-                            Debug.Log("Mov sent");
+                            //Debug.Log("Mov sent");
                             CmdProcessMovement(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump);
                         } else if (i.rotate) {
-                            Debug.Log("Rot sent");
+                            //Debug.Log("Rot sent");
                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
                         }
                     }
+                    /*if (toSend > 0) {
+                        Debug.Log(toSend + " messages sent to server");
+                    }*/
                     //Clear the input list
                     inputsList.Clear();
                 }
@@ -303,8 +313,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     dataStep = 0;
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
-                        RpcClientReceivePosition(timestamp, transform.position, m_MoveDir, m_CollisionFlags);
-                        //Debug.Log("Sent host pos");
+                        RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
+                        Debug.Log("Sent host pos");
                     }
                 }
                 dataStep += Time.fixedDeltaTime;
@@ -329,7 +339,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.wasd = new bool[] { false, false, false, false };
                     inputs.jump = false;
                     inputs.rotate = false;
-                    inputs.timeStamp = Time.time;
+                    inputs.timeStamp = System.DateTime.UtcNow.Ticks;
                 }
                 else {
                     inputs = inputsList.Dequeue();
@@ -357,8 +367,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 if (dataStep > GetNetworkSendInterval()) {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || Quaternion.Angle(transform.rotation, lastCharacterRotation) > 0 || Quaternion.Angle(m_firstPersonCharacter.rotation, lastCameraRotation) > 0) {
-                        RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir, m_CollisionFlags);
-                        //Debug.Log("Sent client pos "+dataStep);
+                        RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir);
+                        //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
                 }
@@ -375,7 +385,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// The stamp is the input time stamp for reconciliation.
     /// </summary>
     [Command(channel = 1)]
-    private void CmdProcessMovement(float stamp, bool[] wasd, bool walk, bool crouch, bool jump) {
+    private void CmdProcessMovement(long stamp, bool[] wasd, bool walk, bool crouch, bool jump) {
         if (inputsList.Count > maxInputs)
             return;   
         ServerProcessInput(stamp, wasd, walk, crouch, jump, false, 0f, 0f);
@@ -385,7 +395,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// Receives input variables to rotate the character in the server.
     /// </summary>
     [Command(channel = 1)]
-    private void CmdProcessRotation(float stamp, float pitch, float yaw) {
+    private void CmdProcessRotation(long stamp, float pitch, float yaw) {
         ServerProcessInput(stamp, new bool[]{ false, false, false, false }, false, false, false, true, pitch, yaw);
     }
 
@@ -393,7 +403,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// Receives input variables to move and rotate the character in the server.
     /// </summary>
     [Command(channel = 1)]
-    private void CmdProcessMovementAndRotation(float stamp, bool[] wasd, bool walk, bool crouch, bool jump, float pitch, float yaw) {
+    private void CmdProcessMovementAndRotation(long stamp, bool[] wasd, bool walk, bool crouch, bool jump, float pitch, float yaw) {
         ServerProcessInput(stamp, wasd, walk, crouch, jump, true, pitch, yaw);
     }
 
@@ -401,7 +411,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// Receives the movements and rotations input and process it. 
     /// </summary>
     [Server]
-    private void ServerProcessInput(float stamp, bool[] wasd, bool walk, bool crouch, bool jump, bool rotate, float pitch, float yaw) {
+    private void ServerProcessInput(long stamp, bool[] wasd, bool walk, bool crouch, bool jump, bool rotate, float pitch, float yaw) {
         //Create the inputs structure
         Inputs received = new Inputs();
         received.timeStamp = stamp;
@@ -420,7 +430,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //Debug.Log("Current input list size: " + inputsList.Count);
 
         //Store the last received message
-        lastMassageTime = Time.time;
+        lastMassageTime = System.DateTime.UtcNow.Ticks;
     }
 
     /// <summary>
@@ -429,7 +439,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="pos">This is the position the server calculated for the input at that time.</param>
     /// <param name="inputStamp">This is the timestamp when the client sent this input originally.</param>
     [ClientRpc]
-    private void RpcClientReceivePosition(float inputStamp, Vector3 pos, Vector3 movementVector, CollisionFlags sflags) {
+    private void RpcClientReceivePosition(long inputStamp, Vector3 pos, Vector3 movementVector) {
         if (reconciliation && isLocalPlayer) {// RECONCILIATION for owner players
             //Check if this stamp is in the list
             if (reconciliationList.Count == 0) {
@@ -445,20 +455,32 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
             }
             else {
+                //Reconciliation starting
+                //Debug.Log("Stamp received from server: "+inputStamp);
+
                 //Get the oldest recorded input from the player
                 ReconciliationEntry firstEntry = reconciliationList[0];
 
+                //Debug.Log("The local reconciliation lists starts at: " + firstEntry.inputs.timeStamp);
+                //Debug.Log("The current position (local start position - before prediction) is: " + firstEntry.trans.position);
+                //Debug.Log("The position the server sent is: " + pos);
+                //Debug.Log("The current position (local end position - after prediction) is: " + transform.position);
+                string debugError = "";
+                float serverCalculationError = 0f;
+                Vector3 predicted = transform.position;
+
                 //If the incoming position is too old, ignore
                 if (inputStamp < firstEntry.inputs.timeStamp) {
-                    //Debug.Log("Ignored! "+ inputStamp+" first in list was "+ firstEntry.stamp);
+                    debugError += "Ignored! " + inputStamp+" first in list was "+ firstEntry.inputs.timeStamp + "\n";
                     return;
                 }
 
+                int oldListSize = reconciliationList.Count;
                 //Remove all older stamps
                 reconciliationList.RemoveAll(
                     entry => entry.inputs.timeStamp <= inputStamp
                 );
-                //Debug.Log("Rmv reconciliation list size: " + reconciliationList.Count);
+                debugError += "Removed: " + (reconciliationList.Count - oldListSize) + ", reconciliation list size: " + reconciliationList.Count + ", old list size: " + oldListSize + "\n";
 
                 //Save current collision flags
                 CollisionFlags cflags = m_CollisionFlags;
@@ -468,12 +490,17 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Apply de received y movement
                 m_MoveDir.y = movementVector.y;
 
-                //Get the server lastest collision flags
-                m_CollisionFlags = sflags;
-
                 // Reapply all the inputs that aren't processed by the server yet.
+                int count = 0;
                 if (reconciliationList.Count > 0) {
+                    debugError += "The first position for reconciliation is: " + reconciliationList[0].position + "\n";
+                    //Get the lastest collision flags
+                    m_CollisionFlags = reconciliationList[0].lastFlags;
+
+                    serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
+
                     float speed = 0f;
+                    ReconciliationEntry first = reconciliationList[0];
                     foreach (ReconciliationEntry e in reconciliationList) {
                         Inputs i = e.inputs;
                         m_Input = i.wasd;
@@ -482,10 +509,29 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         CalcSpeed(out speed);
 
-                        ReconciliatePlayerMovement(speed, i.jump, e.trans);
+                        ReconciliatePlayerMovement(speed, i.jump, e.position, e.rotation);
+                        debugError += "("+(count++)+")Intermediate rec position: " + transform.position+"\n";
                     }
                 }
 
+                debugError += "The final reconciliated position is: " + transform.position+"\n";
+                debugError += "The predicted position was: " + predicted + "\n";
+
+                float threshold = 0.005f;
+
+                //Check if the server calculated the position in a wrong way
+                if (serverCalculationError > 0.005f) {
+                    Debug.Log("[Server position simulation failure] Error (distance): " + serverCalculationError);
+                }
+
+                //Check if predicted is different from renconciliated
+                float recError = Vector3.Distance(predicted, transform.position);
+                if (recError > threshold) {
+                    debugError += "Total error: " + recError+"\n";
+                    debugError += "(Logging only errors above: " + threshold+")";
+                    Debug.Log("[Reconciliation failure] Log:\n"+ debugError);
+                }
+                
                 //Restore collision flags
                 m_CollisionFlags = cflags;
             }
@@ -547,13 +593,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     /// <param name="shouldJump">If the player is jumping - Same as m_Jump, but without overriding that variable</param>
-    private void ReconciliatePlayerMovement(float speed, bool shouldJump, Transform trans) {
+    private void ReconciliatePlayerMovement(float speed, bool shouldJump, Vector3 position, Quaternion rotation) {
+        Vector3 right = rotation * Vector3.right;
+        Vector3 forward = rotation * Vector3.forward;
         // Always move along the camera forward as it is the direction that it being aimed at
-        Vector3 desiredMove = trans.forward * VerticalMovement(m_Input[0], m_Input[2]) + trans.right * HorizontalMovement(m_Input[1], m_Input[3]);
+        Vector3 desiredMove = forward * VerticalMovement(m_Input[0], m_Input[2]) + right * HorizontalMovement(m_Input[1], m_Input[3]);
 
         // Get a normal for the surface that is being touched to move along it
         RaycastHit hitInfo;
-        Physics.SphereCast(trans.position, m_CharacterController.radius, Vector3.down, out hitInfo,
+        Physics.SphereCast(position, m_CharacterController.radius, Vector3.down, out hitInfo,
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
