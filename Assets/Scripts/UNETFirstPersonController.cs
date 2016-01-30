@@ -600,6 +600,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private void MovePlayer(float speed) {
         // Always move along the camera forward as it is the direction that it being aimed at
         Vector3 desiredMove = transform.forward * VerticalMovement(m_Input[0], m_Input[2]) + transform.right * HorizontalMovement(m_Input[1], m_Input[3]);
+        Vector3 desiredStrafe = transform.right * HorizontalMovement(m_Input[1], m_Input[3]);
 
         // Get a normal for the surface that is being touched to move along it
         RaycastHit hitInfo;
@@ -627,6 +628,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
         }
         else {
+            if(desiredMove.magnitude > 0) {
+                m_MoveDir.x = desiredStrafe.x * speed * 0.3f;
+                m_MoveDir.z = desiredStrafe.z * speed * 0.3f; //0.3 is the strafeFactor
+            }
+
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
         }
         m_CollisionFlags = m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
