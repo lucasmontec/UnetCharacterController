@@ -493,6 +493,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 reconciliationList.RemoveAll(
                     entry => entry.inputs.timeStamp <= inputStamp
                 );
+
                 //debugError += "Removed: " + (reconciliationList.Count - oldListSize) + ", reconciliation list size: " + reconciliationList.Count + ", old list size: " + oldListSize + "\n";
 
                 //Save current collision flags
@@ -533,8 +534,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 float threshold = 0.005f;
 
                 //Check if the server calculated the position in a wrong way
+
                 if (serverCalculationError > threshold) {
-                    Debug.Log("[Server position sim failure "+ inputStamp + "] Error (distance): " + serverCalculationError);
+                    Debug.Log("[Server position sim failure " + inputStamp + "] Error (distance): " + serverCalculationError);
                 }
 
                 //Check if predicted is different from renconciliated
