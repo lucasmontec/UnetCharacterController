@@ -605,10 +605,17 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-        m_MoveDir.x = desiredMove.x * speed;
-        m_MoveDir.z = desiredMove.z * speed;
-
         if (m_CharacterController.isGrounded) {
+            if (Math.Abs(desiredMove.x) > 0) {
+                m_MoveDir.x = desiredMove.x * speed;
+            } else {
+                m_MoveDir.x = m_MoveDir.x * 0.8f;
+            }
+            if (Math.Abs(desiredMove.z) > 0) {
+                m_MoveDir.z = desiredMove.z * speed;
+            }else{
+                m_MoveDir.z = m_MoveDir.z * 0.8f;
+            }
             m_MoveDir.y = -m_StickToGroundForce;
 
             if (m_Jump) {
@@ -642,10 +649,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-        m_MoveDir.x = desiredMove.x * speed;
-        m_MoveDir.z = desiredMove.z * speed;
-
         if (m_CollisionFlags.Equals(CollisionFlags.CollidedBelow)) {
+            m_MoveDir.x = desiredMove.x * speed;
+            m_MoveDir.z = desiredMove.z * speed;
             m_MoveDir.y = -m_StickToGroundForce;
 
             if (shouldJump) {
