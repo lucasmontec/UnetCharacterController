@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityStandardAssets.CrossPlatformInput;
 using UnityStandardAssets.Utility;
+using System.Linq;
 using Random = UnityEngine.Random;
 
 // Input and results structs
@@ -194,6 +195,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         }
     }
 
+    string serverDebug = "";
     /*
     * SHARED
     */
@@ -360,10 +362,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
                 currentReconciliationStamp = inputs.timeStamp;
 
+                serverDebug += "\n" + currentReconciliationStamp;
+                serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+"\n";
+
                 CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                 //Move the player object
                 MovePlayer(speed);
+
+                serverDebug += "\nPosition after applying input: " + transform.position+"\n";
 
                 if (dataStep > GetNetworkSendInterval()) {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || Quaternion.Angle(transform.rotation, lastCharacterRotation) > 0 || Quaternion.Angle(m_firstPersonCharacter.rotation, lastCameraRotation) > 0) {
@@ -371,6 +378,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
+                   
+                    using (System.IO.StreamWriter file =
+                        new System.IO.StreamWriter(Application.persistentDataPath+@"\Debug.txt", true)) {
+                                    file.WriteLine("\n\n==================\nInput timestamp: " + currentReconciliationStamp+"\n\n"+ serverDebug + "===================");
+                    }
+                    serverDebug = "";
                 }
                 dataStep += Time.fixedDeltaTime;
             }
@@ -480,7 +493,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 reconciliationList.RemoveAll(
                     entry => entry.inputs.timeStamp <= inputStamp
                 );
-                debugError += "Removed: " + (reconciliationList.Count - oldListSize) + ", reconciliation list size: " + reconciliationList.Count + ", old list size: " + oldListSize + "\n";
+                //debugError += "Removed: " + (reconciliationList.Count - oldListSize) + ", reconciliation list size: " + reconciliationList.Count + ", old list size: " + oldListSize + "\n";
 
                 //Save current collision flags
                 CollisionFlags cflags = m_CollisionFlags;
@@ -493,7 +506,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 // Reapply all the inputs that aren't processed by the server yet.
                 int count = 0;
                 if (reconciliationList.Count > 0) {
-                    debugError += "The first position for reconciliation is: " + reconciliationList[0].position + "\n";
+                    //debugError += "The first position for reconciliation is: " + reconciliationList[0].position + "\n";
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
 
@@ -520,8 +533,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 float threshold = 0.005f;
 
                 //Check if the server calculated the position in a wrong way
-                if (serverCalculationError > 0.005f) {
-                    Debug.Log("[Server position simulation failure] Error (distance): " + serverCalculationError);
+                if (serverCalculationError > threshold) {
+                    Debug.Log("[Server position sim failure "+ inputStamp + "] Error (distance): " + serverCalculationError);
                 }
 
                 //Check if predicted is different from renconciliated
