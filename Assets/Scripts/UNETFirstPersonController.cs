@@ -628,9 +628,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
         }
         else {
-            if(desiredMove.magnitude > 0) {
-                m_MoveDir.x = desiredStrafe.x * speed * 0.3f;
-                m_MoveDir.z = desiredStrafe.z * speed * 0.3f; //0.3 is the strafeFactor
+            if((Vector3.Project(m_MoveDir, transform.right)).magnitude < 5f) {
+                m_MoveDir.x += desiredStrafe.x * speed * 0.3f;
+                m_MoveDir.z += desiredStrafe.z * speed * 0.3f; //0.3 is the strafeFactor
             }
 
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
