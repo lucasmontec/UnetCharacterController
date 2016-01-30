@@ -195,7 +195,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
         }
     }
 
-    string serverDebug = "";
+    string serverDebug = String.Empty;
+    string clientDebug = String.Empty;
     /*
     * SHARED
     */
@@ -268,6 +269,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     entry.rotation = prevRotation;
                     AddReconciliation(entry);
 
+                    
                     //Clear the jump to send
                     sendJump = false;
 
@@ -287,6 +289,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     while (inputsList.Count > 0) {
                         //Send the inputs done locally
                         Inputs i = inputsList.Dequeue();
+
+                        clientDebug += "\n" + i.timeStamp;
+                        clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump + ", does rotate: " + i.rotate + "\n";
                         if (i.move && i.rotate) {
                             //Debug.Log("Mov & Rot sent");
                            CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
@@ -298,9 +303,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
                         }
                     }
-                    /*if (toSend > 0) {
-                        Debug.Log(toSend + " messages sent to server");
-                    }*/
+                    if (toSend > 0) {
+                        using(System.IO.StreamWriter file =
+                            new System.IO.StreamWriter(Application.persistentDataPath + @"\DebugClient.txt", true)) {
+                            file.WriteLine("\n\n==================\nInput:\n\n" + clientDebug + "===================");
+                        }
+                    }
                     //Clear the input list
                     inputsList.Clear();
                 }
