@@ -42,8 +42,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [SerializeField] private AudioClip[] m_FootstepSounds;    // an array of footstep sounds that will be randomly selected from.
     [SerializeField] private AudioClip m_JumpSound;           // the sound played when character leaves the ground.
     [SerializeField] private AudioClip m_LandSound;           // the sound played when character touches back on ground.
-    [SerializeField]
-    private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
+    [SerializeField] private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
+
+    // Player desacceleration factor (the lower, the faster it becomes 0)
+    private const float m_SlowdownFactor = 0.6f;
 
     [SerializeField]
     [Tooltip("Turn of to remove client side prediction")]
@@ -609,12 +611,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (Math.Abs(desiredMove.x) > 0) {
                 m_MoveDir.x = desiredMove.x * speed;
             } else {
-                m_MoveDir.x = m_MoveDir.x * 0.8f;
+                m_MoveDir.x = m_MoveDir.x * m_SlowdownFactor;
             }
             if (Math.Abs(desiredMove.z) > 0) {
                 m_MoveDir.z = desiredMove.z * speed;
             }else{
-                m_MoveDir.z = m_MoveDir.z * 0.8f;
+                m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
             }
             m_MoveDir.y = -m_StickToGroundForce;
 
@@ -650,8 +652,18 @@ public class UNETFirstPersonController : NetworkBehaviour {
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
         if (m_CollisionFlags.Equals(CollisionFlags.CollidedBelow)) {
-            m_MoveDir.x = desiredMove.x * speed;
-            m_MoveDir.z = desiredMove.z * speed;
+            if(Math.Abs(desiredMove.x) > 0) {
+                m_MoveDir.x = desiredMove.x * speed;
+            }
+            else {
+                m_MoveDir.x = m_MoveDir.x * m_SlowdownFactor;
+            }
+            if(Math.Abs(desiredMove.z) > 0) {
+                m_MoveDir.z = desiredMove.z * speed;
+            }
+            else {
+                m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
+            }
             m_MoveDir.y = -m_StickToGroundForce;
 
             if (shouldJump) {
