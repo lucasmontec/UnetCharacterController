@@ -307,6 +307,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         using(System.IO.StreamWriter file =
                             new System.IO.StreamWriter(Application.persistentDataPath + @"\DebugClient.txt", true)) {
                             file.WriteLine("\n\n==================\nInput:\n\n" + clientDebug + "===================");
+
+                            clientDebug = String.Empty;
                         }
                     }
                     //Clear the input list
