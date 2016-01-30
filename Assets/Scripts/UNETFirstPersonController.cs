@@ -197,6 +197,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     string serverDebug = String.Empty;
     string clientDebug = String.Empty;
+    struct debugMovement {
+        public Vector3 position;
+        public Vector3 velocity;
+    }
+    Queue<debugMovement> debugClientPos = new Queue<debugMovement>();
+
     /*
     * SHARED
     */
@@ -260,6 +266,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.crouch = m_isCrouching;
                     inputs.timeStamp = timestamp;
                     inputsList.Enqueue(inputs);
+                    debugMovement dePos = new debugMovement();
+                    // DEBUG POSITION
+                    dePos.velocity = m_CharacterController.velocity;
+                    dePos.position = transform.position;
+                    debugClientPos.Enqueue(dePos);
 
                     // Create reconciliation entry
                     ReconciliationEntry entry = new ReconciliationEntry();
@@ -289,9 +300,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     while (inputsList.Count > 0) {
                         //Send the inputs done locally
                         Inputs i = inputsList.Dequeue();
+                        debugMovement d = debugClientPos.Dequeue();
 
                         clientDebug += "\n" + i.timeStamp;
-                        clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump + ", does rotate: " + i.rotate + "\n";
+                        clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump + ", does rotate: " + i.rotate + "\nposition:" + d.position + ", velocity: " + d.velocity + "\n";
                         if (i.move && i.rotate) {
                             //Debug.Log("Mov & Rot sent");
                            CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
@@ -373,7 +385,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 currentReconciliationStamp = inputs.timeStamp;
 
                 serverDebug += "\n" + currentReconciliationStamp;
-                serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+"\n";
+                serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+ ", grounded: " + m_CharacterController.isGrounded + "\n";
 
                 CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
