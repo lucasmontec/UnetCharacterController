@@ -23,7 +23,8 @@ public struct Inputs {
 
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
-[NetworkSettings(channel = 0, sendInterval = 0.02f)]
+//[NetworkSettings(channel = 0, sendInterval = 0.02f)]
+[NetworkSettings(channel = 0, sendInterval = 0.5f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
@@ -242,7 +243,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
                 //Move the player object
-                MovePlayer(speed);
+                PlayerMovement(speed);
             }
 
             //Client sound and camera
@@ -392,7 +393,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                 //Move the player object
-                MovePlayer(speed);
+                PlayerMovement(speed);
 
                 serverDebug += "\nPosition after applying input: " + transform.position+"\n";
 
@@ -522,6 +523,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 //Save current collision flags
                 CollisionFlags cflags = m_CollisionFlags;
+                //Save m_Jump
+                bool prevJump = m_Jump;
 
                 // Apply the received position
                 transform.position = pos;
@@ -544,10 +547,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         m_Input = i.wasd;
                         m_IsWalking = i.walk;
                         m_isCrouching = i.crouch;
+                        m_Jump = i.jump;
 
                         CalcSpeed(out speed);
 
-                        ReconciliatePlayerMovement(speed, i.jump, e.position, e.rotation);
+                        PlayerMovement(speed, e.position, e.rotation);
                         debugError += "("+(count++)+")Intermediate rec position: " + transform.position+"\n";
                     }
                 }
@@ -573,6 +577,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 
                 //Restore collision flags
                 m_CollisionFlags = cflags;
+                //Restore jump state
+                m_Jump = prevJump;
             }
         }
         else {
@@ -597,75 +603,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// This needs that the variables m_Input, m_Jump, m_JumpSpeed are updated
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
-    private void MovePlayer(float speed) {
-        // Always move along the camera forward as it is the direction that it being aimed at
-        Vector3 desiredMove = transform.forward * VerticalMovement(m_Input[0], m_Input[2]) + transform.right * HorizontalMovement(m_Input[1], m_Input[3]);
-        Vector3 desiredStrafe = transform.right * HorizontalMovement(m_Input[1], m_Input[3]);
-
-        // Get a normal for the surface that is being touched to move along it
-        RaycastHit hitInfo;
-        Physics.SphereCast(transform.position, m_CharacterController.radius, Vector3.down, out hitInfo,
-                           m_CharacterController.height / 2f);
-        desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
-
-        if (m_CharacterController.isGrounded) { //ON GROUND
-            /*
-            * NORMALIZED MOVEMENT WITH SLOW DOWN
-            */
-            if (Math.Abs(desiredMove.x) > 0) {
-                m_MoveDir.x = desiredMove.x * speed;
-            } else {
-                m_MoveDir.x = m_MoveDir.x * m_SlowdownFactor;
-            }
-            if (Math.Abs(desiredMove.z) > 0) {
-                m_MoveDir.z = desiredMove.z * speed;
-            }else{
-                m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
-            }
-            m_MoveDir.y = -m_StickToGroundForce;
-
-            /*
-            * JUMP
-            */
-            if (m_Jump) {
-                m_MoveDir.y = m_JumpSpeed;
-                m_Jump = false;
-                m_Jumping = true;
-            }
-        }
-        else { //ON AIR
-            /*
-            * STRAFE
-            */
-            //Strafe desire
-            float movementDot = Vector3.Dot(m_MoveDir, transform.right);
-            float desiredStrafeDot = Vector3.Dot(desiredStrafe, transform.right);
-            if (
-                /*Going right but not at full speed, and want to accelerate*/
-                (movementDot < 5f && movementDot > 0f && desiredStrafeDot > 0f)
-                ||
-                /*Going left but not at full speed, and want to accelerate*/
-                (movementDot > -5f && movementDot < 0f && desiredStrafeDot < 0f)
-                ||
-                /*Going right but want to go left*/
-                (movementDot > 0f && desiredStrafeDot < 0f)
-                ||
-                /*Going left but want to go right*/
-                (movementDot < 0f && desiredStrafeDot > 0f)
-                ||
-                /*Want to strafe*/
-                (movementDot == 0f)
-                ) {
-                m_MoveDir.x += desiredStrafe.x * speed * 0.3f;
-                m_MoveDir.z += desiredStrafe.z * speed * 0.3f;
-            }
-
-            /*
-            * GRAVITY
-            */
-            m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
-        }
-        m_CollisionFlags = m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
+    private void PlayerMovement(float speed) {
+        PlayerMovement(speed, transform.position, transform.rotation);
     }
 
     /// <summary>
@@ -674,8 +613,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// This needs that the variables m_Input, m_JumpSpeed are updated
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
-    /// <param name="shouldJump">If the player is jumping - Same as m_Jump, but without overriding that variable</param>
-    private void ReconciliatePlayerMovement(float speed, bool shouldJump, Vector3 position, Quaternion rotation) {
+    private void PlayerMovement(float speed, Vector3 position, Quaternion rotation) {
         Vector3 right = rotation * Vector3.right;
         Vector3 forward = rotation * Vector3.forward;
         // Always move along the camera forward as it is the direction that it being aimed at
