@@ -608,7 +608,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-        if (m_CharacterController.isGrounded) {
+        if (m_CharacterController.isGrounded) { //ON GROUND
+            /*
+            * NORMALIZED MOVEMENT WITH SLOW DOWN
+            */
             if (Math.Abs(desiredMove.x) > 0) {
                 m_MoveDir.x = desiredMove.x * speed;
             } else {
@@ -621,13 +624,19 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
             m_MoveDir.y = -m_StickToGroundForce;
 
+            /*
+            * JUMP
+            */
             if (m_Jump) {
                 m_MoveDir.y = m_JumpSpeed;
                 m_Jump = false;
                 m_Jumping = true;
             }
         }
-        else {
+        else { //ON AIR
+            /*
+            * STRAFE
+            */
             //Strafe desire
             float movementDot = Vector3.Dot(m_MoveDir, transform.right);
             float desiredStrafeDot = Vector3.Dot(desiredStrafe, transform.right);
@@ -651,6 +660,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 m_MoveDir.z += desiredStrafe.z * speed * 0.3f;
             }
 
+            /*
+            * GRAVITY
+            */
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
         }
         m_CollisionFlags = m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
@@ -668,6 +680,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         Vector3 forward = rotation * Vector3.forward;
         // Always move along the camera forward as it is the direction that it being aimed at
         Vector3 desiredMove = forward * VerticalMovement(m_Input[0], m_Input[2]) + right * HorizontalMovement(m_Input[1], m_Input[3]);
+        Vector3 desiredStrafe = transform.right * HorizontalMovement(m_Input[1], m_Input[3]);
 
         // Get a normal for the surface that is being touched to move along it
         RaycastHit hitInfo;
@@ -675,26 +688,60 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-        if (m_CollisionFlags.Equals(CollisionFlags.CollidedBelow)) {
-            if(Math.Abs(desiredMove.x) > 0) {
+        if (m_CollisionFlags.Equals(CollisionFlags.CollidedBelow)) { //ON GROUND
+            /*
+            * NORMALIZED MOVEMENT WITH SLOW DOWN
+            */
+            if (Math.Abs(desiredMove.x) > 0) {
                 m_MoveDir.x = desiredMove.x * speed;
-            }
-            else {
+            } else {
                 m_MoveDir.x = m_MoveDir.x * m_SlowdownFactor;
             }
-            if(Math.Abs(desiredMove.z) > 0) {
+            if (Math.Abs(desiredMove.z) > 0) {
                 m_MoveDir.z = desiredMove.z * speed;
-            }
-            else {
+            } else {
                 m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
             }
             m_MoveDir.y = -m_StickToGroundForce;
 
-            if (shouldJump) {
+            /*
+            * JUMP
+            */
+            if (m_Jump) {
                 m_MoveDir.y = m_JumpSpeed;
+                m_Jump = false;
+                m_Jumping = true;
             }
-        }
-        else {
+        } else { //ON AIR
+            /*
+            * STRAFE
+            */
+            //Strafe desire
+            float movementDot = Vector3.Dot(m_MoveDir, transform.right);
+            float desiredStrafeDot = Vector3.Dot(desiredStrafe, transform.right);
+            if (
+                /*Going right but not at full speed, and want to accelerate*/
+                (movementDot < 5f && movementDot > 0f && desiredStrafeDot > 0f)
+                ||
+                /*Going left but not at full speed, and want to accelerate*/
+                (movementDot > -5f && movementDot < 0f && desiredStrafeDot < 0f)
+                ||
+                /*Going right but want to go left*/
+                (movementDot > 0f && desiredStrafeDot < 0f)
+                ||
+                /*Going left but want to go right*/
+                (movementDot < 0f && desiredStrafeDot > 0f)
+                ||
+                /*Want to strafe*/
+                (movementDot == 0f)
+                ) {
+                m_MoveDir.x += desiredStrafe.x * speed * 0.3f;
+                m_MoveDir.z += desiredStrafe.z * speed * 0.3f;
+            }
+
+            /*
+            * GRAVITY
+            */
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
         }
         m_CollisionFlags = m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
