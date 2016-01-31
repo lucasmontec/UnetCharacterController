@@ -47,6 +47,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     // Player desacceleration factor (the lower, the faster it becomes 0)
     private const float m_SlowdownFactor = 0.6f;
+    // Player strafe factor (the higher, more control he has while on air)
+    private const float m_StrafeSpeed = 0.9f;
 
     [SerializeField]
     [Tooltip("Turn of to remove client side prediction")]
@@ -673,8 +675,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 /*Want to strafe*/
                 (movementDot == 0f)
                 ) {
-                m_MoveDir.x += desiredStrafe.x * speed * 0.3f;
-                m_MoveDir.z += desiredStrafe.z * speed * 0.3f;
+                m_MoveDir.x += desiredStrafe.x * m_StrafeSpeed;
+                m_MoveDir.z += desiredStrafe.z * m_StrafeSpeed;
             }
 
             /*
