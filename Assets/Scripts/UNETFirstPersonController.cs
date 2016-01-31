@@ -340,7 +340,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
                         RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
-                        Debug.Log("Sent host pos");
+                        //Debug.Log("Sent host pos");
                     }
                 }
                 dataStep += Time.fixedDeltaTime;
@@ -628,9 +628,27 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
         }
         else {
-            if((Vector3.Project(m_MoveDir, transform.right)).magnitude < 5f) {
+            //Strafe desire
+            float movementDot = Vector3.Dot(m_MoveDir, transform.right);
+            float desiredStrafeDot = Vector3.Dot(desiredStrafe, transform.right);
+            if (
+                /*Going right but not at full speed, and want to accelerate*/
+                (movementDot < 5f && movementDot > 0f && desiredStrafeDot > 0f)
+                ||
+                /*Going left but not at full speed, and want to accelerate*/
+                (movementDot > -5f && movementDot < 0f && desiredStrafeDot < 0f)
+                ||
+                /*Going right but want to go left*/
+                (movementDot > 0f && desiredStrafeDot < 0f)
+                ||
+                /*Going left but want to go right*/
+                (movementDot < 0f && desiredStrafeDot > 0f)
+                ||
+                /*Want to strafe*/
+                (movementDot == 0f)
+                ) {
                 m_MoveDir.x += desiredStrafe.x * speed * 0.3f;
-                m_MoveDir.z += desiredStrafe.z * speed * 0.3f; //0.3 is the strafeFactor
+                m_MoveDir.z += desiredStrafe.z * speed * 0.3f;
             }
 
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
