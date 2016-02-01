@@ -24,7 +24,7 @@ public struct Inputs {
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 //[NetworkSettings(channel = 0, sendInterval = 0.02f)]
-[NetworkSettings(channel = 0, sendInterval = 0.5f)]
+[NetworkSettings(channel = 0, sendInterval = 0.02f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
