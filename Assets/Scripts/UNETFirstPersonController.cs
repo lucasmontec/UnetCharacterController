@@ -24,7 +24,7 @@ public struct Inputs {
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 //[NetworkSettings(channel = 0, sendInterval = 0.02f)]
-[NetworkSettings(channel = 0, sendInterval = 0.5f)]
+[NetworkSettings(channel = 0, sendInterval = 0.2f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
@@ -308,7 +308,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         debugMovement d = debugClientPos.Dequeue();
 
                         clientDebug += "\n" + i.timeStamp;
-                        clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump + ", does rotate: " + i.rotate + "\nposition:" + d.position + ", velocity: " + d.velocity + "\n";
+                        clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump +
+                                        ", does rotate: " + i.rotate + "\nposition: (" + d.position.x + ", " + d.position.y + ", " + d.position.z + "), velocity: " + d.velocity + "\n";
                         if (i.move && i.rotate) {
                             //Debug.Log("Mov & Rot sent");
                            CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
@@ -397,7 +398,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 serverDebug += "\n" + currentReconciliationStamp;
                 serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+ ", velocity: " + m_CharacterController.velocity + "\n";
 
-                serverDebug += "\nPosition after applying input: " + transform.position+"\n";
+                serverDebug += "\nPosition after applying input: (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
 
                 if (dataStep > GetNetworkSendInterval()) {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || Quaternion.Angle(transform.rotation, lastCharacterRotation) > 0 || Quaternion.Angle(m_firstPersonCharacter.rotation, lastCameraRotation) > 0) {
