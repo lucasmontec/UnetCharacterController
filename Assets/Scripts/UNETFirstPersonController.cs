@@ -389,13 +389,13 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
                 currentReconciliationStamp = inputs.timeStamp;
 
-                serverDebug += "\n" + currentReconciliationStamp;
-                serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+ ", velocity: " + m_CharacterController.velocity + "\n";
-
                 CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                 //Move the player object
                 PlayerMovement(speed);
+
+                serverDebug += "\n" + currentReconciliationStamp;
+                serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+ ", velocity: " + m_CharacterController.velocity + "\n";
 
                 serverDebug += "\nPosition after applying input: " + transform.position+"\n";
 
