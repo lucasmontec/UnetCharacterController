@@ -24,7 +24,7 @@ public struct Inputs {
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 //[NetworkSettings(channel = 0, sendInterval = 0.02f)]
-[NetworkSettings(channel = 0, sendInterval = 0.2f)]
+[NetworkSettings(channel = 0, sendInterval = 0.02f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
@@ -517,6 +517,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
 
                 int oldListSize = reconciliationList.Count;
+                //Debug, get the client entry for the server stamp
+                ReconciliationEntry clientForServerStamp = new ReconciliationEntry();
+                reconciliationList.ForEach(
+                    entry => {
+                        if(entry.inputs.timeStamp == inputStamp) {
+                            clientForServerStamp = entry;
+                        }
+                    }
+                );
                 //Remove all older stamps
                 reconciliationList.RemoveAll(
                     entry => entry.inputs.timeStamp <= inputStamp
@@ -541,7 +550,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
 
-                    serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
+                    serverCalculationError = Vector3.Distance(clientForServerStamp.position, pos);
 
                     float speed = 0f;
                     ReconciliationEntry first = reconciliationList[0];
