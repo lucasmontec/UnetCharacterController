@@ -551,7 +551,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
 
-                    serverCalculationError = Vector3.Distance(clientForServerStamp.position, pos);
+                    serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
 
                     float speed = 0f;
                     ReconciliationEntry first = reconciliationList[0];
