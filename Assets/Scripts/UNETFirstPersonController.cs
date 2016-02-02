@@ -24,7 +24,7 @@ public struct Inputs {
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 //[NetworkSettings(channel = 0, sendInterval = 0.02f)]
-[NetworkSettings(channel = 0, sendInterval = 0.02f)]
+[NetworkSettings(channel = 0, sendInterval = 0.08f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
@@ -539,8 +539,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 // Apply the received position
                 transform.position = pos;
-                //Apply de received y movement
-                m_MoveDir.y = movementVector.y;
+                //Apply 'de' received movement
+                m_MoveDir = movementVector;
 
                 // Reapply all the inputs that aren't processed by the server yet.
                 int count = 0;
