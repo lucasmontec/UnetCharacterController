@@ -220,6 +220,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (isLocalPlayer) {
             long timestamp = System.DateTime.UtcNow.Ticks;
             //Store crouch input to send to server
+            //We do this before reading input so that we can compare with the current crouch state
             bool sendCrouch = m_isCrouching;
 
             //Input from user or simulated
@@ -230,13 +231,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 GetInput(out speed);
             }
 
-            //This is for the host to know if it moved to send change messages
-            Vector3 lastPosition = transform.position;
-
             //Store jump input to send to server
             bool sendJump = m_Jump;
 
             // Store transform values
+            //This is also used for the host to know if it moved to send change messages
             Vector3 prevPosition = transform.position;
             Quaternion prevRotation = transform.rotation;
             // Store collision values
@@ -277,14 +276,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     dePos.position = transform.position;
                     debugClientPos.Enqueue(dePos);
 
-                    // Create reconciliation entry
-                    ReconciliationEntry entry = new ReconciliationEntry();
-                    entry.inputs = inputs;
-                    entry.lastFlags = lastFlag;
-                    entry.position = prevPosition;
-                    entry.rotation = prevRotation;
-                    AddReconciliation(entry);
-
+                    //If we moved, then we need to store reconciliation
+                    if (moved || sendJump || crouchChange) {
+                        // Create reconciliation entry
+                        ReconciliationEntry entry = new ReconciliationEntry();
+                        entry.inputs = inputs;
+                        entry.lastFlags = lastFlag;
+                        entry.position = prevPosition;
+                        entry.rotation = prevRotation;
+                        AddReconciliation(entry);
+                    }
                     
                     //Clear the jump to send
                     sendJump = false;
@@ -341,7 +342,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (isServer) {
                 if (dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
-                    if (Vector3.Distance(transform.position, lastPosition) > 0 || rotationChanged) {
+                    if (Vector3.Distance(transform.position, prevPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
                         RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
                         //Debug.Log("Sent host pos");
