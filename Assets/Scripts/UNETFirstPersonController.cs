@@ -171,23 +171,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
             // The jump state needs to read here to make sure it is not missed
             if (m_CharacterController.isGrounded)
                 m_Jump |= CrossPlatformInputManager.GetButtonDown("Jump");
-
-            if (!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
-                StartCoroutine(m_JumpBob.DoBobCycle());
-                PlayLandingSound();
-                m_Jumping = false;
-            }
-
-            m_PreviouslyGrounded = m_CharacterController.isGrounded;
-
-        }
-        else if (isServer) { //Server side jump
-
-            if (!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
-                m_Jumping = false;
-            }
-
-            m_PreviouslyGrounded = m_CharacterController.isGrounded;
         }
     }
 
@@ -209,6 +192,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //If this is running at the local player (client with authoritative control or host client)
         //We run normal FPS controller (prediction)
         if (isLocalPlayer) {
+            m_PreviouslyGrounded = m_CharacterController.isGrounded;
+
             long timestamp = System.DateTime.UtcNow.Ticks;
             //Store crouch input to send to server
             //We do this before reading input so that we can compare with the current crouch state
@@ -237,9 +222,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Move the player object
                 PlayerMovement(speed);
             }
-
+            
             //Client sound and camera
             ProgressStepCycle(speed);
+
+            if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
+                StartCoroutine(m_JumpBob.DoBobCycle());
+                PlayLandingSound();
+                m_Jumping = false;
+            }
 
             //OWNER CLIENTS THAT ARE NOT THE HOST
             //CLIENTS THAT ARE NOT THE SERVER
@@ -347,6 +338,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
         */
         else { //If we are on the server, we process commands from the client instead, and generate update messages
             if (isServer) {
+                if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
+                    m_Jumping = false;
+                }
+
                 Inputs inputs;
                 if (inputsList.Count == 0) {
                     //Check if the message is late
@@ -406,6 +401,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     serverDebug = "";
                 }
                 dataStep += Time.fixedDeltaTime;
+                m_PreviouslyGrounded = m_CharacterController.isGrounded;
             }
         }
     }
