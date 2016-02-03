@@ -618,11 +618,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     private void PlayerMovement(float speed, Vector3 position, Quaternion rotation) {
+        //Calculate player local forward vector and right vector based on the rotation
         Vector3 right = rotation * Vector3.right;
         Vector3 forward = rotation * Vector3.forward;
+
         // Always move along the camera forward as it is the direction that it being aimed at
         Vector3 desiredMove = forward * VerticalMovement(m_Input[0], m_Input[2]) + right * HorizontalMovement(m_Input[1], m_Input[3]);
-        Vector3 desiredStrafe = transform.right * HorizontalMovement(m_Input[1], m_Input[3]);
+        //Calculate the side movement for strafing while in air
+        Vector3 desiredStrafe = right * HorizontalMovement(m_Input[1], m_Input[3]);
 
         // Get a normal for the surface that is being touched to move along it
         RaycastHit hitInfo;
@@ -659,8 +662,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
             * STRAFE
             */
             //Strafe desire
-            float movementDot = Vector3.Dot(m_MoveDir, transform.right);
-            float desiredStrafeDot = Vector3.Dot(desiredStrafe, transform.right);
+            //The momevent dot the component of the (global) movement vector along the transform right vector
+            float movementDot = Vector3.Dot(m_MoveDir, right);
+            //THe desired strafe dot is also the component of the desired (global) strafe movement along the local right vector
+            float desiredStrafeDot = Vector3.Dot(desiredStrafe, right);
+            //Here we do this massive if to check if the strafe is valid
             if (
                 /*Going right but not at full speed, and want to accelerate*/
                 (movementDot < 5f && movementDot > 0f && desiredStrafeDot > 0f)
