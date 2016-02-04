@@ -106,7 +106,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     //This variable prevents the server from simulating a client when messages
     //are too late
     private long lastMassageTime = 0;
-    private const float maxDelayBeforeServerSimStop = 0.2f;
+    private const long maxDelayBeforeServerSimStop = 10000;
 
     //Local reconciliation (authority player)
     private struct ReconciliationEntry {
