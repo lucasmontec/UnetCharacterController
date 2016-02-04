@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="UNETFirstPersonController">
+    <Position X="2.75" Y="1" Width="4.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Struct Name="UNETFirstPersonController.ReconciliationEntry" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Assets\Scripts\UNETFirstPersonController.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Struct Name="UNETFirstPersonController.debugMovement" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Assets\Scripts\UNETFirstPersonController.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>lUQAFVBqBiAUMMSAcgw6TAAEQQIilQAcCGoAYUgBUQA=</HashCode>
+      <FileName>Assets\Scripts\UNETFirstPersonController.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI Semibold" Size="8.25" />
+</ClassDiagram>
