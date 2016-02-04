@@ -114,6 +114,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         public Vector3 position;
         public Quaternion rotation;
         public bool grounded;
+        public bool prevCrouching;
         public CollisionFlags lastFlags;
     }
     private List<ReconciliationEntry> reconciliationList = new List<ReconciliationEntry>();
@@ -269,6 +270,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         entry.position = prevPosition;
                         entry.rotation = prevRotation;
                         entry.grounded = prevGrounded;
+                        entry.prevCrouching = m_PreviouslyCrouching;
                         AddReconciliation(entry);
                     }
                     
@@ -551,6 +553,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         m_IsWalking = i.walk;
                         m_isCrouching = i.crouch;
                         m_Jump = i.jump;
+                        m_PreviouslyCrouching = e.prevCrouching;
 
                         CalcSpeed(out speed);
 
