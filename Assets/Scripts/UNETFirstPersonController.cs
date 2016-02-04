@@ -633,7 +633,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-        if (m_CollisionFlags.Equals(CollisionFlags.CollidedBelow)) { //ON GROUND
+        if ( m_CollisionFlags.Equals(CollisionFlags.CollidedBelow) || m_CharacterController.isGrounded ) { //ON GROUND
             /*
             * NORMALIZED MOVEMENT WITH SLOW DOWN
             */
