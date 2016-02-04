@@ -113,6 +113,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         public Inputs inputs;
         public Vector3 position;
         public Quaternion rotation;
+        public bool grounded;
         public CollisionFlags lastFlags;
     }
     private List<ReconciliationEntry> reconciliationList = new List<ReconciliationEntry>();
@@ -214,6 +215,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //This is also used for the host to know if it moved to send change messages
             Vector3 prevPosition = transform.position;
             Quaternion prevRotation = transform.rotation;
+            bool prevGrounded = m_CharacterController.isGrounded;
             // Store collision values
             CollisionFlags lastFlag = m_CollisionFlags;
 
@@ -266,6 +268,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         entry.lastFlags = lastFlag;
                         entry.position = prevPosition;
                         entry.rotation = prevRotation;
+                        entry.grounded = prevGrounded;
                         AddReconciliation(entry);
                     }
                     
@@ -551,7 +554,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         CalcSpeed(out speed);
 
-                        PlayerMovement(speed, e.position, e.rotation);
+                        PlayerMovement(speed, e.grounded, e.position, e.rotation);
                         debugError += "("+(count++)+")Intermediate rec position: " + transform.position+"\n";
                     }
                 }
@@ -608,7 +611,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     private void PlayerMovement(float speed) {
-        PlayerMovement(speed, transform.position, transform.rotation);
+        PlayerMovement(speed, m_CharacterController.isGrounded, transform.position, transform.rotation);
     }
 
     /// <summary>
@@ -617,7 +620,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// This needs that the variables m_Input, m_JumpSpeed are updated
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
-    private void PlayerMovement(float speed, Vector3 position, Quaternion rotation) {
+    private void PlayerMovement(float speed, bool grounded, Vector3 position, Quaternion rotation) {
         //Calculate player local forward vector and right vector based on the rotation
         Vector3 right = rotation * Vector3.right;
         Vector3 forward = rotation * Vector3.forward;
@@ -633,7 +636,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
 
-        if ( m_CollisionFlags.Equals(CollisionFlags.CollidedBelow) || m_CharacterController.isGrounded ) { //ON GROUND
+        if ( grounded ) { //ON GROUND
             /*
             * NORMALIZED MOVEMENT WITH SLOW DOWN
             */
