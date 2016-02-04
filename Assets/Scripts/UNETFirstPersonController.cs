@@ -309,14 +309,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
                         }
                     }
-                    if (toSend > 0) {
+                   /* if (toSend > 0) {
                         using(System.IO.StreamWriter file =
                             new System.IO.StreamWriter(Application.persistentDataPath + @"\DebugClient.txt", true)) {
                             file.WriteLine("\n\n==================\nInput:\n\n" + clientDebug + "===================");
 
                             clientDebug = String.Empty;
                         }
-                    }
+                    }*/
                     //Clear the input list
                     inputsList.Clear();
                 }
@@ -399,10 +399,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     }
                     dataStep = 0;
                    
-                    using (System.IO.StreamWriter file =
+                   /* using (System.IO.StreamWriter file =
                         new System.IO.StreamWriter(Application.persistentDataPath+@"\Debug.txt", true)) {
                                     file.WriteLine("\n\n==================\nInput timestamp: " + currentReconciliationStamp+"\n\n"+ serverDebug + "===================");
-                    }
+                    }*/
                     serverDebug = "";
                 }
                 dataStep += Time.fixedDeltaTime;
@@ -464,7 +464,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //Debug.Log("Current input list size: " + inputsList.Count);
 
         //Store the last received message
-        lastMassageTime = System.DateTime.UtcNow.Ticks;
+        lastMassageTime = stamp;
     }
 
     /// <summary>
