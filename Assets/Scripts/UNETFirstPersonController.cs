@@ -136,6 +136,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //Debug.Log("Current reconciliation list size: " + reconciliationList.Count);
     }
 
+    //Network initialization
+    public void Awake() {
+        NetworkServer.RegisterHandler(InputListMessage.MSGID, ServerProcessInput);
+    }
+
     // Use this for initialization
     private void Start() {
         //Client initialization
@@ -290,25 +295,29 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Debug.Log("Sending messages to server");
                     int toSend = inputsList.Count;
                     //Send input to the server
-                    while (inputsList.Count > 0) {
-                        //Send the inputs done locally
-                        Inputs i = inputsList.Dequeue();
-                        debugMovement d = debugClientPos.Dequeue();
+                    /* while (inputsList.Count > 0) {
+                         //Send the inputs done locally
+                         Inputs i = inputsList.Dequeue();
+                         debugMovement d = debugClientPos.Dequeue();
 
-                        clientDebug += "\n" + i.timeStamp;
-                        clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump +
-                                        ", does rotate: " + i.rotate + "\nposition: (" + d.position.x + ", " + d.position.y + ", " + d.position.z + "), velocity: " + d.velocity + "\n";
-                        if (i.move && i.rotate) {
-                            //Debug.Log("Mov & Rot sent");
-                           CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
-                        } else if (i.move) {
-                            //Debug.Log("Mov sent");
-                            CmdProcessMovement(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump);
-                        } else if (i.rotate) {
-                            //Debug.Log("Rot sent");
-                            CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
-                        }
-                    }
+                         clientDebug += "\n" + i.timeStamp;
+                         clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump +
+                                         ", does rotate: " + i.rotate + "\nposition: (" + d.position.x + ", " + d.position.y + ", " + d.position.z + "), velocity: " + d.velocity + "\n";
+                         if (i.move && i.rotate) {
+                             //Debug.Log("Mov & Rot sent");
+                            CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
+                         } else if (i.move) {
+                             //Debug.Log("Mov sent");
+                             CmdProcessMovement(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump);
+                         } else if (i.rotate) {
+                             //Debug.Log("Rot sent");
+                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
+                         }
+                     }*/
+                    InputListMessage messageToSend = new InputListMessage();
+                    messageToSend.inputsList = new List<Inputs>(inputsList);
+                    connectionToServer.Send(InputListMessage.MSGID, messageToSend);
+
                    /* if (toSend > 0) {
                         using(System.IO.StreamWriter file =
                             new System.IO.StreamWriter(Application.persistentDataPath + @"\DebugClient.txt", true)) {
@@ -393,7 +402,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 serverDebug += "\nPosition after applying input: (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
 
                 if (dataStep > GetNetworkSendInterval()) {
-                    if (Vector3.Distance(transform.position, lastPosition) > 0 || Quaternion.Angle(transform.rotation, lastCharacterRotation) > 0 || Quaternion.Angle(m_firstPersonCharacter.rotation, lastCameraRotation) > 0) {
+                    if (Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
                         RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir);
                         //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
@@ -413,58 +422,21 @@ public class UNETFirstPersonController : NetworkBehaviour {
     //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>FIXED UPDATE
 
     /// <summary>
-    /// This is the server-side part of the controller.
-    /// This receives input variables to move the character in the server using
-    /// client input.
-    /// The stamp is the input time stamp for reconciliation.
-    /// </summary>
-    [Command(channel = 1)]
-    private void CmdProcessMovement(long stamp, bool[] wasd, bool walk, bool crouch, bool jump) {
-        if (inputsList.Count > maxInputs)
-            return;   
-        ServerProcessInput(stamp, wasd, walk, crouch, jump, false, 0f, 0f);
-    }
-
-    /// <summary>
-    /// Receives input variables to rotate the character in the server.
-    /// </summary>
-    [Command(channel = 1)]
-    private void CmdProcessRotation(long stamp, float pitch, float yaw) {
-        ServerProcessInput(stamp, new bool[]{ false, false, false, false }, false, false, false, true, pitch, yaw);
-    }
-
-    /// <summary>
-    /// Receives input variables to move and rotate the character in the server.
-    /// </summary>
-    [Command(channel = 1)]
-    private void CmdProcessMovementAndRotation(long stamp, bool[] wasd, bool walk, bool crouch, bool jump, float pitch, float yaw) {
-        ServerProcessInput(stamp, wasd, walk, crouch, jump, true, pitch, yaw);
-    }
-
-    /// <summary>
     /// Receives the movements and rotations input and process it. 
     /// </summary>
     [Server]
-    private void ServerProcessInput(long stamp, bool[] wasd, bool walk, bool crouch, bool jump, bool rotate, float pitch, float yaw) {
-        //Create the inputs structure
-        Inputs received = new Inputs();
-        received.timeStamp = stamp;
-        received.wasd = wasd;
-        received.walk = walk;
-        received.crouch = crouch;
-        received.jump = jump;
-        received.rotate = rotate;
-        received.pitch = pitch;
-        received.yaw = yaw;
+    private void ServerProcessInput(NetworkMessage netMsg) {
+        //Get the msg
+        InputListMessage msg = netMsg.ReadMessage<InputListMessage>();
 
         //Add all inputs
-        inputsList.Enqueue(received);
+        msg.inputsList.ForEach(e => inputsList.Enqueue(e) );
 
         //Debug.Log("Stamp of last input: " + stamp);
         //Debug.Log("Current input list size: " + inputsList.Count);
 
         //Store the last received message
-        lastMassageTime = stamp;
+        lastMassageTime = msg.stamp;
     }
 
     /// <summary>
