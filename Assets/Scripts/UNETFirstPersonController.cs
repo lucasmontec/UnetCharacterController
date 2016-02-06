@@ -44,10 +44,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [SerializeField] private AudioClip m_JumpSound;           // the sound played when character leaves the ground.
     [SerializeField] private AudioClip m_LandSound;           // the sound played when character touches back on ground.
     [SerializeField] private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
-
-    // Player desacceleration factor (the lower, the faster it becomes 0)
+ 
+    [SerializeField]
+    [Tooltip("Player desacceleration factor (the lower, the faster it becomes 0)")]
     private const float m_SlowdownFactor = 0.6f;
-    // Player strafe factor (the higher, more control he has while on air)
+    [SerializeField]
+    [Tooltip("Player strafe factor (the higher, more control he has while on air)")]
     private const float m_StrafeSpeed = 0.9f;
 
     [SerializeField]
@@ -86,12 +88,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private Boolean useLocalInterpolation = true;
     private Vector3 targetPosition;
     private float localInterpolationFactor = 10f;
-
-    // Velocity struct
-    //public struct Velocity {
-    //    public Vector3 velocity;
-    //    public float timeStamp;
-    //}
 
     //The list of inputs sent from the player to the server
     //This is server side
@@ -132,8 +128,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //Limit the list size
         if (reconciliationList.Count > maxReconciliationEntries)
             reconciliationList.RemoveAt(0);
-
-        //Debug.Log("Current reconciliation list size: " + reconciliationList.Count);
     }
 
     //Network initialization
@@ -247,7 +241,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 bool moved = m_CharacterController.velocity.sqrMagnitude > 0 || m_Input[0] || m_Input[1]
                     || m_Input[2] || m_Input[3];
                 if (moved || sendJump || crouchChange || rotationChanged) {
-                    //Debug.Log("W: " + m_Input[0] + " A: " + m_Input[1] + " S: " + m_Input[2] + " D: " + m_Input[3]);
                     //Store all inputs generated between msgs to send to server
                     Inputs inputs = new Inputs();
                     inputs.yaw = transform.rotation.eulerAngles.y;
@@ -295,25 +288,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Debug.Log("Sending messages to server");
                     int toSend = inputsList.Count;
                     //Send input to the server
-                    /* while (inputsList.Count > 0) {
-                         //Send the inputs done locally
-                         Inputs i = inputsList.Dequeue();
-                         debugMovement d = debugClientPos.Dequeue();
-
-                         clientDebug += "\n" + i.timeStamp;
-                         clientDebug += "\nSending input: [" + String.Join(", ", i.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + i.walk + ", is crouching: " + i.crouch + ", is jumping: " + i.jump +
-                                         ", does rotate: " + i.rotate + "\nposition: (" + d.position.x + ", " + d.position.y + ", " + d.position.z + "), velocity: " + d.velocity + "\n";
-                         if (i.move && i.rotate) {
-                             //Debug.Log("Mov & Rot sent");
-                            CmdProcessMovementAndRotation(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump, i.pitch, i.yaw);
-                         } else if (i.move) {
-                             //Debug.Log("Mov sent");
-                             CmdProcessMovement(i.timeStamp, i.wasd, i.walk, i.crouch, i.jump);
-                         } else if (i.rotate) {
-                             //Debug.Log("Rot sent");
-                             CmdProcessRotation(i.timeStamp, i.pitch, i.yaw);
-                         }
-                     }*/
                     InputListMessage messageToSend = new InputListMessage();
                     messageToSend.inputsList = new List<Inputs>(inputsList);
                     connectionToServer.Send(InputListMessage.MSGID, messageToSend);
