@@ -110,7 +110,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
         public Quaternion rotation;
         public bool grounded;
         public bool prevCrouching;
-        public CollisionFlags lastFlags;
     }
     private List<ReconciliationEntry> reconciliationList = new List<ReconciliationEntry>();
 
@@ -127,6 +126,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //Limit the list size
         if (reconciliationList.Count > maxReconciliationEntries)
             reconciliationList.RemoveAt(0);
+    }
+
+    private bool AcquiringGround() {
+        return m_CharacterController.currentGround.IsGrounded(false, 0.01f);
+    }
+
+    private bool MaintainingGround() {
+        return m_CharacterController.currentGround.IsGrounded(true, 0.5f);
     }
 
     //Network initialization
@@ -169,7 +176,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
 
             // The jump state needs to read here to make sure it is not missed
-            if (m_CharacterController.isGrounded())
+            if (MaintainingGround())
                 m_Jump |= CrossPlatformInputManager.GetButtonDown("Jump");
         }
     }
@@ -192,7 +199,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //If this is running at the local player (client with authoritative control or host client)
         //We run normal FPS controller (prediction)
         if (isLocalPlayer) {
-            m_PreviouslyGrounded = m_CharacterController.isGrounded;
+            m_PreviouslyGrounded = MaintainingGround();
 
             long timestamp = System.DateTime.UtcNow.Ticks;
             //Store crouch input to send to server
@@ -214,7 +221,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //This is also used for the host to know if it moved to send change messages
             Vector3 prevPosition = transform.position;
             Quaternion prevRotation = transform.rotation;
-            bool prevGrounded = m_CharacterController.isGrounded;
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
@@ -225,7 +231,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //Client sound and camera
             ProgressStepCycle(speed);
 
-            if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
+            if(!m_PreviouslyGrounded && AcquiringGround()) {
                 StartCoroutine(m_JumpBob.DoBobCycle());
                 PlayLandingSound();
                 m_Jumping = false;
@@ -261,10 +267,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         // Create reconciliation entry
                         ReconciliationEntry entry = new ReconciliationEntry();
                         entry.inputs = inputs;
-                        entry.lastFlags = lastFlag;
                         entry.position = prevPosition;
                         entry.rotation = prevRotation;
-                        entry.grounded = prevGrounded;
+                        entry.grounded = m_PreviouslyGrounded;
                         entry.prevCrouching = m_PreviouslyCrouching;
                         AddReconciliation(entry);
                     }
@@ -323,7 +328,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         */
         else { //If we are on the server, we process commands from the client instead, and generate update messages
             if (isServer) {
-                if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
+                if(!m_PreviouslyGrounded && AcquiringGround()) {
                     m_Jumping = false;
                 }
 
@@ -386,7 +391,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     serverDebug = "";
                 }
                 dataStep += Time.fixedDeltaTime;
-                m_PreviouslyGrounded = m_CharacterController.isGrounded;
+                m_PreviouslyGrounded = MaintainingGround();
             }
         }
     }
@@ -551,7 +556,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     private void PlayerMovement(float speed) {
-        PlayerMovement(speed, m_CharacterController.isGrounded, transform.position, transform.rotation);
+        PlayerMovement(speed, MaintainingGround(), transform.position, transform.rotation);
     }
 
     /// <summary>
@@ -635,7 +640,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
             */
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
         }
-        m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
+        //m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
+        transform.Translate(m_MoveDir * Time.fixedDeltaTime);
     }
 
     /// <summary>
@@ -649,7 +655,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (!m_PreviouslyCrouching) {
                 // If the player was NOT crouching in the previous frame,
                 // but is crouching in the current, set his height to the CrouchHeight
-                m_CharacterController.height = m_CrouchCharacterHeight;
+                //m_CharacterController.height = m_CrouchCharacterHeight; TO-DO
             }
         }
         // If not crouching, set the desired speed to be walking or running
@@ -658,7 +664,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (m_PreviouslyCrouching) {
                 // If the player WAS crouching in the previous frame,
                 // but is not crouching in the current, set his height to standard CharacterHeight
-                m_CharacterController.height = 1.8f;
+                //m_CharacterController.height = 1.8f; TO-DO
             }
         }
 
@@ -730,14 +736,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (m_isCrouching) {
             speed = m_CrouchSpeed;
             if (!m_PreviouslyCrouching) {
-                m_CharacterController.height = m_CrouchCharacterHeight;
+                //m_CharacterController.height = m_CrouchCharacterHeight; TO-DO
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
             if (m_PreviouslyCrouching) {
-                m_CharacterController.height = 1.8f;
+                //m_CharacterController.height = 1.8f; TO-DO
             }
         }
 
@@ -777,14 +783,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (m_isCrouching) {
             speed = m_CrouchSpeed;
             if (!m_PreviouslyCrouching) {
-                m_CharacterController.height = m_CrouchCharacterHeight;
+                //m_CharacterController.height = m_CrouchCharacterHeight; TO-DO
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
             if (m_PreviouslyCrouching) {
-                m_CharacterController.height = 1.8f;
+                //m_CharacterController.height = 1.8f; TO-DO
             }
         }
 
@@ -807,24 +813,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [Client]
     private void RotateView() {
         m_MouseLook.LookRotation(transform, m_Camera.transform);
-    }
-
-    /// <summary>
-    /// Called when the controller hits a collider while performing a Move.
-    /// </summary>
-    /// <param name="hit"></param>
-    //Shared
-    private void OnControllerColliderHit(ControllerColliderHit hit) {
-        Rigidbody body = hit.collider.attachedRigidbody;
-        //dont move the rigidbody if the character is on top of it
-        if (m_CollisionFlags == CollisionFlags.Below) {
-            return;
-        }
-
-        if (body == null || body.isKinematic) {
-            return;
-        }
-        body.AddForceAtPosition(m_CharacterController.velocity * 0.1f, hit.point, ForceMode.Impulse);
     }
 
     /// <summary>
@@ -879,7 +867,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     [Client]
     private void PlayFootStepAudio() {
-        if (!m_CharacterController.isGrounded) {
+        if (!MaintainingGround()) {
             return;
         }
         // Pick & play a random footstep sound from the array,
