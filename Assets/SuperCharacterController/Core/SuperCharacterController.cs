@@ -70,6 +70,10 @@ public class SuperCharacterController : MonoBehaviour
     [SerializeField]
     public float radius = 0.5f;
 
+    // The object's velocity
+    public Vector3 lastPosition;
+    public Vector3 velocity { get { return transform.position - lastPosition; } }
+
     public float deltaTime { get; private set; }
     public SuperGround currentGround { get; private set; }
     public CollisionSphere feet { get; private set; }

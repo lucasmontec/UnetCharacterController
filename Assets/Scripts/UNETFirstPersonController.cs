@@ -566,6 +566,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     private void PlayerMovement(float speed, bool grounded, Vector3 position, Quaternion rotation) {
+        // Saving last position to calculate the character's velocity later.
+        m_CharacterController.lastPosition = transform.position;
+
         //Calculate player local forward vector and right vector based on the rotation
         Vector3 right = rotation * Vector3.right;
         Vector3 forward = rotation * Vector3.forward;
