@@ -68,8 +68,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_PreviouslyCrouching;
     private bool[] m_Input = new bool[4]; // W, A, S, D
     private Vector3 m_MoveDir = Vector3.zero;
-    private CharacterController m_CharacterController;
-    private CollisionFlags m_CollisionFlags;
+    private SuperCharacterController m_CharacterController;
     private bool m_PreviouslyGrounded;
     private Vector3 m_OriginalCameraPosition;
     private float m_StepCycle;
@@ -139,7 +138,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private void Start() {
         //Client initialization
         if (isLocalPlayer) {
-            m_CharacterController = GetComponent<CharacterController>();
+            m_CharacterController = GetComponent<SuperCharacterController>();
             m_Camera = GetComponentInChildren<Camera>();
             m_OriginalCameraPosition = m_Camera.transform.localPosition;
             m_FovKick.Setup(m_Camera);
@@ -150,7 +149,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             m_MouseLook.Init(transform, m_Camera.transform);
         }
         if (isServer) { // Server side initialization
-            m_CharacterController = GetComponent<CharacterController>();
+            m_CharacterController = GetComponent<SuperCharacterController>();
             m_Jumping = false;
         }
     }
@@ -170,7 +169,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
 
             // The jump state needs to read here to make sure it is not missed
-            if (m_CharacterController.isGrounded)
+            if (m_CharacterController.isGrounded())
                 m_Jump |= CrossPlatformInputManager.GetButtonDown("Jump");
         }
     }
@@ -187,7 +186,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     * SHARED
     */
     //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>FIXED UPDATE
-    private void FixedUpdate() {
+    private void SuperUpdate() {
         float speed = 0f;
 
         //If this is running at the local player (client with authoritative control or host client)
@@ -216,8 +215,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
             Vector3 prevPosition = transform.position;
             Quaternion prevRotation = transform.rotation;
             bool prevGrounded = m_CharacterController.isGrounded;
-            // Store collision values
-            CollisionFlags lastFlag = m_CollisionFlags;
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
@@ -472,8 +469,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 //debugError += "Removed: " + (reconciliationList.Count - oldListSize) + ", reconciliation list size: " + reconciliationList.Count + ", old list size: " + oldListSize + "\n";
 
-                //Save current collision flags
-                CollisionFlags cflags = m_CollisionFlags;
                 //Save m_Jump
                 bool prevJump = m_Jump;
 
@@ -486,8 +481,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 int count = 0;
                 if (reconciliationList.Count > 0) {
                     //debugError += "The first position for reconciliation is: " + reconciliationList[0].position + "\n";
-                    //Get the lastest collision flags
-                    m_CollisionFlags = reconciliationList[0].lastFlags;
 
                     serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
 
@@ -531,8 +524,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     }
                 }
                 
-                //Restore collision flags
-                m_CollisionFlags = cflags;
                 //Restore jump state
                 m_Jump = prevJump;
             }
@@ -644,7 +635,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             */
             m_MoveDir += Physics.gravity * m_GravityMultiplier * Time.fixedDeltaTime;
         }
-        m_CollisionFlags = m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
+        m_CharacterController.Move(m_MoveDir * Time.fixedDeltaTime);
     }
 
     /// <summary>
