@@ -129,10 +129,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
     }
 
     private bool AcquiringGround() {
+        if (m_CharacterController.currentGround == null)
+            return false;
         return m_CharacterController.currentGround.IsGrounded(false, 0.01f);
     }
 
     private bool MaintainingGround() {
+        if (m_CharacterController.currentGround == null)
+            return false;
         return m_CharacterController.currentGround.IsGrounded(true, 0.5f);
     }
 
