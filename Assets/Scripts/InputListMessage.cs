@@ -8,7 +8,7 @@ public class InputListMessage : MessageBase {
     public static short MSGID { get { return MsgType.Highest + 10; } }
 
     public List<Inputs> inputsList = null;
-    public long stamp = 0;
+    public double stamp = 0;
 
     public override void Serialize(NetworkWriter writer) {
         writer.StartMessage(MSGID);
@@ -53,7 +53,7 @@ public class InputListMessage : MessageBase {
             input.move = reader.ReadBoolean();
             input.pitch = reader.ReadSingle();
             input.rotate = reader.ReadBoolean();
-            input.timeStamp = reader.ReadInt64();
+            input.timeStamp = reader.ReadDouble();
             input.walk = reader.ReadBoolean();
             bool[] wasd = new bool[4];
             wasd[0] = reader.ReadBoolean();

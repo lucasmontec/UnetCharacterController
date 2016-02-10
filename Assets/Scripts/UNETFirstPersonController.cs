@@ -18,7 +18,7 @@ public struct Inputs {
     public bool jump;
     public bool rotate;
 
-    public long timeStamp;
+    public double timeStamp;
 }
 
 [RequireComponent(typeof(CharacterController))]
@@ -79,7 +79,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     //Reconciliation list - Client side (excludes the host client)
     private int maxReconciliationEntries = 250;
-    private long currentReconciliationStamp = 0;
+    private double currentReconciliationStamp = 0;
 
     //Local interpolation
     //The local authority on clients interpolate when correcting large diffs
@@ -101,8 +101,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
     //Reduce server and client simulation mismatch
     //This variable prevents the server from simulating a client when messages
     //are too late
-    private long lastMassageTime = 0;
-    private const long maxDelayBeforeServerSimStop = 10000;
+    private double lastMassageTime = 0;
+    private const double maxDelayBeforeServerSimStop = 10000;
 
     //Local reconciliation (authority player)
     private struct ReconciliationEntry {
@@ -195,7 +195,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (isLocalPlayer) {
             m_PreviouslyGrounded = m_CharacterController.isGrounded;
 
-            long timestamp = System.DateTime.UtcNow.Ticks;
+            double timestamp = Network.time;
             //Store crouch input to send to server
             //We do this before reading input so that we can compare with the current crouch state
             bool sendCrouch = m_isCrouching;
@@ -344,7 +344,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.wasd = new bool[] { false, false, false, false };
                     inputs.jump = false;
                     inputs.rotate = false;
-                    inputs.timeStamp = System.DateTime.UtcNow.Ticks;
+                    inputs.timeStamp = Network.time;
                 }
                 else {
                     inputs = inputsList.Dequeue();
@@ -419,7 +419,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="pos">This is the position the server calculated for the input at that time.</param>
     /// <param name="inputStamp">This is the timestamp when the client sent this input originally.</param>
     [ClientRpc]
-    private void RpcClientReceivePosition(long inputStamp, Vector3 pos, Vector3 movementVector) {
+    private void RpcClientReceivePosition(double inputStamp, Vector3 pos, Vector3 movementVector) {
         if (reconciliation && isLocalPlayer) {// RECONCILIATION for owner players
             //Check if this stamp is in the list
             if (reconciliationList.Count == 0) {
@@ -580,10 +580,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
         Vector3 desiredStrafe = right * HorizontalMovement(m_Input[1], m_Input[3]);
 
         // Get a normal for the surface that is being touched to move along it
-        RaycastHit hitInfo;
+        /*RaycastHit hitInfo;
         Physics.SphereCast(position, m_CharacterController.radius, Vector3.down, out hitInfo,
                            m_CharacterController.height / 2f);
-        desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;
+        desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;*/
 
         if ( grounded ) { //ON GROUND
             /*
@@ -599,7 +599,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             } else {
                 m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
             }
-            m_MoveDir.y = -m_StickToGroundForce;
+            m_MoveDir.y = -1;
 
             /*
             * JUMP
