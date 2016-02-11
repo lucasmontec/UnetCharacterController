@@ -366,9 +366,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                     //Position acceptance
                     //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
-                    if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
+                    /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
                         transform.position = inputs.calculatedPosition;
-                    }
+                    }*/
                 }
 
                 //If its time to send messages
@@ -424,8 +424,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Nothing to reconciliate, apply server position
                 //Debug.Log(transform.position.ToString() + " : " + pos.ToString()); NUNCA REMOVER
                 transform.position = pos;
-            }
-            else {
+            } else {
                 //Reconciliation starting
                 //Debug.Log("Stamp received from server: "+inputStamp);
 
@@ -447,15 +446,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
 
                 int oldListSize = reconciliationList.Count;
-                //Debug, get the client entry for the server stamp
-                ReconciliationEntry clientForServerStamp = new ReconciliationEntry();
-                reconciliationList.ForEach(
-                    entry => {
-                        if(entry.inputs.timeStamp == inputStamp) {
-                            clientForServerStamp = entry;
-                        }
-                    }
-                );
+
                 //Remove all older stamps
                 reconciliationList.RemoveAll(
                     entry => entry.inputs.timeStamp <= inputStamp
@@ -483,11 +474,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     m_CollisionFlags = reconciliationList[0].lastFlags;
 
                     //We use the next stamp because we save state before move
-                    serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
+                    //Debug
+                    firstEntry = reconciliationList[0];
+                    serverCalculationError = Vector3.Distance(firstEntry.position, pos);
                     //Debug.Log("SStamp: "+inputStamp+" CStamp: "+ clientForServerStamp.inputs.timeStamp);
 
                     float speed = 0f;
-                    ReconciliationEntry first = reconciliationList[0];
                     foreach (ReconciliationEntry e in reconciliationList) {
                         Inputs i = e.inputs;
                         m_Input = i.wasd;
@@ -510,6 +502,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 if (serverCalculationError > threshold) {
                     Debug.Log("[Server position sim failure " + inputStamp + "] Error (distance): " + serverCalculationError);
+                    Debug.Log("[Server position sim failure " + inputStamp + "] : SV: " + pos+ " CL "+ firstEntry.position);
                 }
 
                 //Check if predicted is different from renconciliated
