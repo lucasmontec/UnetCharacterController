@@ -82,14 +82,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private int maxReconciliationEntries = 250;
     private double currentReconciliationStamp = 0;
 
-    //Local interpolation
-    //The local authority on clients interpolate when correcting large diffs
-    [SerializeField]
-    [Tooltip("Turn on to add interpolation correction for local players that are clients.")]
-    private Boolean useLocalInterpolation = true;
-    private Vector3 targetPosition;
-    private float localInterpolationFactor = 10f;
-
     //The list of inputs sent from the player to the server
     //This is server side
     private Queue<Inputs> inputsList = new Queue<Inputs>();
@@ -343,7 +335,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 Inputs inputs;
                 inputs.rotate = false;
 
-                //If we have inputs, get them
+                //If we have inputs, get them and simulate on the server
                 if (inputsList.Count > 0) {
                     inputs = inputsList.Dequeue();
 
@@ -379,7 +371,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     }
                 }
 
+                //If its time to send messages
                 if (dataStep > GetNetworkSendInterval()) {
+                    //If we have any changes in position or rotation, we send a messsage
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
                         RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir);
                         //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
@@ -429,14 +423,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (reconciliationList.Count == 0) {
                 //Nothing to reconciliate, apply server position
                 //Debug.Log(transform.position.ToString() + " : " + pos.ToString()); NUNCA REMOVER
-                if (useLocalInterpolation) {
-                    targetPosition = pos;
-                    if(Vector3.SqrMagnitude(transform.position - targetPosition) > 0) {
-                        transform.position = Vector3.Lerp(transform.position, targetPosition, localInterpolationFactor);
-                    }
-                } else {
-                    transform.position = pos;
-                }
+                transform.position = pos;
             }
             else {
                 //Reconciliation starting
