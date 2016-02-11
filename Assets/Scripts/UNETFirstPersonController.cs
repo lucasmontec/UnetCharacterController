@@ -534,14 +534,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //NO RECONCILIATION
             //When the position arrives from the server, since server is priority,
             //set the local pos to it
-            if(useLocalInterpolation) {
-                targetPosition = pos;
-                if(Vector3.SqrMagnitude(transform.position - targetPosition) > 0) {
-                    transform.position = Vector3.Lerp(transform.position, targetPosition, localInterpolationFactor);
-                }
-            } else {
-                 transform.position = pos;
-            }
+            transform.position = pos;
         }
     }
 
