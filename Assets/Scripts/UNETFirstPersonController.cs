@@ -25,7 +25,7 @@ public struct Inputs {
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
 //[NetworkSettings(channel = 0, sendInterval = 0.02f)]
-[NetworkSettings(channel = 0, sendInterval = 0.08f)]
+[NetworkSettings(channel = 0, sendInterval = 0.5f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
@@ -334,43 +334,44 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     m_Jumping = false;
                 }
 
-                Inputs inputs;
-                if (inputsList.Count == 0) {
-                    //No inputs, means no movement at all. So we just don't simulate that player
-                    return;
-                }
-                else {
-                    inputs = inputsList.Dequeue();
-                }
-
+                //Store state
                 Vector3 lastPosition = transform.position;
                 Quaternion lastCharacterRotation = transform.rotation;
                 Quaternion lastCameraRotation = m_firstPersonCharacter.rotation;
 
-                m_IsWalking = inputs.walk;
-                m_Input = inputs.wasd;
-                m_isCrouching = inputs.crouch;
-                m_Jump = inputs.jump;
-                if (inputs.rotate) {
-                    transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
-                    m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
-                }
-                currentReconciliationStamp = inputs.timeStamp;
+                //Create the struct to read possible input to calculate
+                Inputs inputs;
+                inputs.rotate = false;
 
-                CalcSpeed(out speed); //Server-side method to the speed out of input from clients
+                //If we have inputs, get them
+                if (inputsList.Count > 0) {
+                    inputs = inputsList.Dequeue();
 
-                //Move the player object
-                PlayerMovement(speed);
+                    m_IsWalking = inputs.walk;
+                    m_Input = inputs.wasd;
+                    m_isCrouching = inputs.crouch;
+                    m_Jump = inputs.jump;
+                    if (inputs.rotate) {
+                        transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
+                        m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
+                    }
+                    currentReconciliationStamp = inputs.timeStamp;
 
-                serverDebug += "\n" + currentReconciliationStamp;
-                serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+ ", velocity: " + m_CharacterController.velocity + "\n";
+                    CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
-                serverDebug += "\nPosition after applying input: (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
+                    //Move the player object
+                    PlayerMovement(speed);
 
-                //Position acceptance
-                //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
-                if(Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
-                    transform.position = inputs.calculatedPosition;
+                    serverDebug += "\n" + currentReconciliationStamp;
+                    serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + inputs.walk + ", is crouching: " + inputs.crouch + ", is jumping: " + inputs.jump + ", does rotate: " + inputs.rotate + ", velocity: " + m_CharacterController.velocity + "\n";
+
+                    serverDebug += "\nPosition after applying input: (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
+
+                    //Position acceptance
+                    //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
+                    if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
+                        transform.position = inputs.calculatedPosition;
+                    }
                 }
 
                 if (dataStep > GetNetworkSendInterval()) {
