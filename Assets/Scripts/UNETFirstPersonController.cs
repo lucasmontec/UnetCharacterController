@@ -17,6 +17,7 @@ public struct Inputs {
     public bool crouch;
     public bool jump;
     public bool rotate;
+    public Vector3 calculatedPosition;
 
     public double timeStamp;
 }
@@ -482,6 +483,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Apply 'de' received movement
                 m_MoveDir = movementVector;
 
+                float threshold = 0.005f;
+
                 // Reapply all the inputs that aren't processed by the server yet.
                 int count = 0;
                 if (reconciliationList.Count > 0) {
@@ -489,7 +492,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
 
+                    //We use the next stamp because we save state before move
                     serverCalculationError = Vector3.Distance(reconciliationList[0].position, pos);
+                    //Debug.Log("SStamp: "+inputStamp+" CStamp: "+ clientForServerStamp.inputs.timeStamp);
 
                     float speed = 0f;
                     ReconciliationEntry first = reconciliationList[0];
@@ -510,8 +515,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 debugError += "The final reconciliated position is: " + transform.position+"\n";
                 debugError += "The predicted position was: " + predicted + "\n";
-
-                float threshold = 0.005f;
 
                 //Check if the server calculated the position in a wrong way
 
