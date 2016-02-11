@@ -10,6 +10,10 @@ public class InputListMessage : MessageBase {
     public List<Inputs> inputsList = null;
     public double stamp = 0;
 
+    private void packBoolean(int slot) {
+
+    }
+
     public override void Serialize(NetworkWriter writer) {
         writer.StartMessage(MSGID);
         //Send the number of elements
@@ -28,6 +32,7 @@ public class InputListMessage : MessageBase {
             writer.Write(i.wasd[2]);//bool
             writer.Write(i.wasd[3]);//bool
             writer.Write(i.yaw);//float
+            writer.Write(i.calculatedPosition);
         }
         writer.FinishMessage();
     }
@@ -62,6 +67,7 @@ public class InputListMessage : MessageBase {
             wasd[3] = reader.ReadBoolean();
             input.wasd = wasd;
             input.yaw = reader.ReadSingle();
+            input.calculatedPosition = reader.ReadVector3();
 
             //Add to the message list
             inputsList.Add(input);

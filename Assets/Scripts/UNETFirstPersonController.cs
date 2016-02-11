@@ -252,6 +252,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.rotate = rotationChanged;
                     inputs.jump = sendJump;
                     inputs.crouch = m_isCrouching;
+                    inputs.calculatedPosition = transform.position;
                     inputs.timeStamp = timestamp;
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
@@ -346,6 +347,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.jump = false;
                     inputs.rotate = false;
                     inputs.timeStamp = Network.time;
+                    inputs.calculatedPosition = transform.position;
                 }
                 else {
                     inputs = inputsList.Dequeue();
@@ -375,6 +377,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p=>p.ToString()).ToArray()) + "],\nis walking: "+ inputs.walk+ ", is crouching: "+ inputs.crouch+", is jumping: "+ inputs.jump+", does rotate: "+ inputs.rotate+ ", velocity: " + m_CharacterController.velocity + "\n";
 
                 serverDebug += "\nPosition after applying input: (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
+
+                //Position acceptance
+                //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
+                if(Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
+                    transform.position = inputs.calculatedPosition;
+                }
 
                 if (dataStep > GetNetworkSendInterval()) {
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
