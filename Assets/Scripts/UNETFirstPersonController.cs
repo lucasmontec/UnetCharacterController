@@ -351,16 +351,21 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     m_Input = inputs.wasd;
                     m_isCrouching = inputs.crouch;
                     m_Jump = inputs.jump;
+                    currentReconciliationStamp = inputs.timeStamp;
+
+                    //If need to, apply rotation
                     if (inputs.rotate) {
                         transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
                         m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
                     }
-                    currentReconciliationStamp = inputs.timeStamp;
+                    
+                    //If need to, simulate movement
+                    if (inputs.move) { 
+                        CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
-                    CalcSpeed(out speed); //Server-side method to the speed out of input from clients
-
-                    //Move the player object
-                    PlayerMovement(speed);
+                        //Move the player object
+                        PlayerMovement(speed);
+                    }
 
                     serverDebug += "\n" + currentReconciliationStamp;
                     serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + inputs.walk + ", is crouching: " + inputs.crouch + ", is jumping: " + inputs.jump + ", does rotate: " + inputs.rotate + ", velocity: " + m_CharacterController.velocity + "\n";
