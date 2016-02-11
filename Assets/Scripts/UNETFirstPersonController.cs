@@ -109,7 +109,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private struct ReconciliationEntry {
         public Inputs inputs;
         public Vector3 position;
-        public Quaternion rotation;
+        public float rotationYaw;
         public bool grounded;
         public bool prevCrouching;
         public CollisionFlags lastFlags;
@@ -270,7 +270,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         entry.inputs = inputs;
                         entry.lastFlags = lastFlag;
                         entry.position = prevPosition;
-                        entry.rotation = prevRotation;
+                        entry.rotationYaw = transform.rotation.eulerAngles.y;
                         entry.grounded = prevGrounded;
                         entry.prevCrouching = m_PreviouslyCrouching;
                         AddReconciliation(entry);
@@ -505,7 +505,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         CalcSpeed(out speed);
 
-                        PlayerMovement(speed, e.grounded, e.position, e.rotation);
+                        PlayerMovement(speed, e.grounded, e.position, e.rotationYaw);
                         debugError += "("+(count++)+")Intermediate rec position: " + transform.position+"\n";
                     }
                 }
@@ -560,16 +560,17 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
     private void PlayerMovement(float speed) {
-        PlayerMovement(speed, m_CharacterController.isGrounded, transform.position, transform.rotation);
+        PlayerMovement(speed, m_CharacterController.isGrounded, transform.position, transform.rotation.eulerAngles.y);
     }
 
     /// <summary>
     /// CLIENT-SIDE RECONCILIATION MOVEPLAYER
     /// Using a given input and gravity, moves the player object.
-    /// This needs that the variables m_Input, m_JumpSpeed are updated
     /// </summary>
-    /// <param name="speed">The speed of the movement calculated on an input method. Changes if the player is running or crouching.</param>
-    private void PlayerMovement(float speed, bool grounded, Vector3 position, Quaternion rotation) {
+    private void PlayerMovement(float speed, bool grounded, Vector3 position, float rotationYaw) {
+        //Builds the rotation
+        Quaternion rotation = Quaternion.Euler(transform.rotation.x, rotationYaw, transform.rotation.z);
+
         //Calculate player local forward vector and right vector based on the rotation
         Vector3 right = rotation * Vector3.right;
         Vector3 forward = rotation * Vector3.forward;
