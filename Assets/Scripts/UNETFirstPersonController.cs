@@ -194,6 +194,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         //If this is running at the local player (client with authoritative control or host client)
         //We run normal FPS controller (prediction)
         if (isLocalPlayer) {
+            //This must be before move to check if move grounded the character
             m_PreviouslyGrounded = m_CharacterController.isGrounded;
 
             double timestamp = Network.time;
@@ -210,6 +211,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             }
 
             //Store jump input to send to server
+            //We need to store this here because player movement will clear m_Jump
             bool sendJump = m_Jump;
 
             // Store transform values
@@ -239,7 +241,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //CLIENTS THAT ARE NOT THE SERVER
             if (!isServer) {
                 bool crouchChange = m_isCrouching != sendCrouch;
-                bool moved = m_CharacterController.velocity.sqrMagnitude > 0 || m_Input[0] || m_Input[1]
+                bool moved = Vector3.Distance(prevPosition, transform.position) > 0 || m_Input[0] || m_Input[1]
                     || m_Input[2] || m_Input[3];
                 if (moved || sendJump || crouchChange || rotationChanged) {
                     //Store all inputs generated between msgs to send to server
@@ -334,24 +336,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 Inputs inputs;
                 if (inputsList.Count == 0) {
-                    //Check if the message is late
-                    //If the message is too late and the list is empty
-                    //Stop server simulation of the player
-                    if (lastMassageTime > maxDelayBeforeServerSimStop)
-                        return;
-
-                    inputs = new Inputs();
-                    inputs.walk = true;
-                    inputs.crouch = m_isCrouching;
-                    inputs.wasd = new bool[] { false, false, false, false };
-                    inputs.jump = false;
-                    inputs.rotate = false;
-                    inputs.timeStamp = Network.time;
-                    inputs.calculatedPosition = transform.position;
+                    //No inputs, means no movement at all. So we just don't simulate that player
+                    return;
                 }
                 else {
                     inputs = inputsList.Dequeue();
-                    //Debug.Log("Removing : "+inputs.timeStamp);
                 }
 
                 Vector3 lastPosition = transform.position;
