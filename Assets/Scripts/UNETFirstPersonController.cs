@@ -50,6 +50,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
     // The delta of the camera's position when crouched
     private Vector3 m_CameraCrouchPosDelta;
 
+    // The square root of two.
+    private const float sqrt2 = 1.414213562373f;
     [SerializeField]
     [Tooltip("Player desacceleration factor (the lower, the faster it becomes 0)")]
     private const float m_SlowdownFactor = 0.6f;
@@ -563,6 +565,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
         // Always move along the camera forward as it is the direction that it being aimed at
         Vector3 desiredMove = forward * VerticalMovement(m_Input[0], m_Input[2]) + right * HorizontalMovement(m_Input[1], m_Input[3]);
+        // Normalizing diagonal movement
+        if((m_Input[0] || m_Input[2]) && (m_Input[1] || m_Input[3])) {
+            desiredMove.x /= sqrt2;
+            desiredMove.z /= sqrt2;
+        }
         //Calculate the side movement for strafing while in air
         Vector3 desiredStrafe = right * HorizontalMovement(m_Input[1], m_Input[3]);
 
