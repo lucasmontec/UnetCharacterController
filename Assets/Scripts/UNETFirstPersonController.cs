@@ -640,8 +640,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (!m_PreviouslyCrouching) {
                 // If the player was NOT crouching in the previous frame,
                 // but is crouching in the current, set his height to the CrouchHeight
-                m_CharacterController.height -= m_CrouchHeightDelta;
-                m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
+                Crouch();
             }
         }
         // If not crouching, set the desired speed to be walking or running
@@ -650,8 +649,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (m_PreviouslyCrouching) {
                 // If the player WAS crouching in the previous frame,
                 // but is not crouching in the current, set his height to standard CharacterHeight
-                m_CharacterController.height += m_CrouchHeightDelta;
-                m_CharacterController.center += m_CrouchedHitboxCenterDelta;
+                Uncrouch();
             }
         }
 
@@ -723,16 +721,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (m_isCrouching) {
             speed = m_CrouchSpeed;
             if (!m_PreviouslyCrouching) {
-                m_CharacterController.height -= m_CrouchHeightDelta;
-                m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
+                Crouch();
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
             if (m_PreviouslyCrouching) {
-                m_CharacterController.height += m_CrouchHeightDelta;
-                m_CharacterController.center += m_CrouchedHitboxCenterDelta;
+                Uncrouch();
             }
         }
 
@@ -772,16 +768,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (m_isCrouching) {
             speed = m_CrouchSpeed;
             if (!m_PreviouslyCrouching) {
-                m_CharacterController.height -= m_CrouchHeightDelta;
-                m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
+                Crouch();
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
             if (m_PreviouslyCrouching) {
-                m_CharacterController.height += m_CrouchHeightDelta;
-                m_CharacterController.center += m_CrouchedHitboxCenterDelta;
+                Uncrouch();
             }
         }
 
@@ -804,6 +798,22 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [Client]
     private void RotateView() {
         m_MouseLook.LookRotation(transform, m_Camera.transform);
+    }
+
+    /// <summary>
+    /// Sets the height and the center of the hitbox to be lower, to make the character crouch.
+    /// </summary>
+    private void Crouch() {
+        m_CharacterController.height -= m_CrouchHeightDelta;
+        m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
+    }
+
+    /// <summary>
+    /// Returns the height and the center of the hitbox to its default values.
+    /// </summary>
+    private void Uncrouch() {
+        m_CharacterController.height += m_CrouchHeightDelta;
+        m_CharacterController.center += m_CrouchedHitboxCenterDelta;
     }
 
     /// <summary>
