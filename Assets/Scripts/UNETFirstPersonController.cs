@@ -46,8 +46,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [SerializeField] private AudioClip m_LandSound;           // the sound played when character touches back on ground.
     [SerializeField] private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
     // The delta center of hitbox when crouched
-    private Vector3 m_CrouchedHitboxCenterDelta { get { return new Vector3(0f, m_CrouchHeightDelta * 0.5f, 0f); } }
- 
+    private Vector3 m_CrouchedHitboxCenterDelta;
+    // The delta of the camera's position when crouched
+    private Vector3 m_CameraCrouchPosDelta;
+
     [SerializeField]
     [Tooltip("Player desacceleration factor (the lower, the faster it becomes 0)")]
     private const float m_SlowdownFactor = 0.6f;
@@ -148,6 +150,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
             m_CharacterController = GetComponent<CharacterController>();
             m_Jumping = false;
         }
+
+        m_CrouchedHitboxCenterDelta = new Vector3(0f, m_CrouchHeightDelta * 0.5f, 0f);
+        m_CameraCrouchPosDelta = new Vector3(0f, m_CrouchHeightDelta * 1.5f, 0f);
     }
 
     /*
@@ -806,6 +811,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private void Crouch() {
         m_CharacterController.height -= m_CrouchHeightDelta;
         m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
+
+        if(isLocalPlayer)
+            m_Camera.transform.position -= m_CameraCrouchPosDelta;
     }
 
     /// <summary>
@@ -814,6 +822,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private void Uncrouch() {
         m_CharacterController.height += m_CrouchHeightDelta;
         m_CharacterController.center += m_CrouchedHitboxCenterDelta;
+
+        if(isLocalPlayer)
+            m_Camera.transform.position += m_CameraCrouchPosDelta;
     }
 
     /// <summary>
