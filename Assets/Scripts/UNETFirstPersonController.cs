@@ -32,7 +32,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [SerializeField] private float m_RunSpeed;
     [SerializeField] [Range(0f, 1f)]    private float m_RunstepLenghten;
     [SerializeField] private float m_CrouchSpeed = 3f;
-    [SerializeField] private float m_CrouchCharacterHeight = 1.4f;
+    [SerializeField] private float m_CrouchHeightDelta = 0.6f;
     [SerializeField] private float m_JumpSpeed = 10f;
     [SerializeField] private float m_StickToGroundForce;
     [SerializeField] private float m_GravityMultiplier;
@@ -45,6 +45,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
     [SerializeField] private AudioClip m_JumpSound;           // the sound played when character leaves the ground.
     [SerializeField] private AudioClip m_LandSound;           // the sound played when character touches back on ground.
     [SerializeField] private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
+    // The delta center of hitbox when crouched
+    private Vector3 m_CrouchedHitboxCenterDelta { get { return new Vector3(0f, m_CrouchHeightDelta * 0.5f, 0f); } }
  
     [SerializeField]
     [Tooltip("Player desacceleration factor (the lower, the faster it becomes 0)")]
@@ -638,7 +640,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (!m_PreviouslyCrouching) {
                 // If the player was NOT crouching in the previous frame,
                 // but is crouching in the current, set his height to the CrouchHeight
-                m_CharacterController.height = m_CrouchCharacterHeight;
+                m_CharacterController.height -= m_CrouchHeightDelta;
+                m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
             }
         }
         // If not crouching, set the desired speed to be walking or running
@@ -647,7 +650,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (m_PreviouslyCrouching) {
                 // If the player WAS crouching in the previous frame,
                 // but is not crouching in the current, set his height to standard CharacterHeight
-                m_CharacterController.height = 1.8f;
+                m_CharacterController.height += m_CrouchHeightDelta;
+                m_CharacterController.center += m_CrouchedHitboxCenterDelta;
             }
         }
 
@@ -719,14 +723,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (m_isCrouching) {
             speed = m_CrouchSpeed;
             if (!m_PreviouslyCrouching) {
-                m_CharacterController.height = m_CrouchCharacterHeight;
+                m_CharacterController.height -= m_CrouchHeightDelta;
+                m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
             if (m_PreviouslyCrouching) {
-                m_CharacterController.height = 1.8f;
+                m_CharacterController.height += m_CrouchHeightDelta;
+                m_CharacterController.center += m_CrouchedHitboxCenterDelta;
             }
         }
 
@@ -766,14 +772,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
         if (m_isCrouching) {
             speed = m_CrouchSpeed;
             if (!m_PreviouslyCrouching) {
-                m_CharacterController.height = m_CrouchCharacterHeight;
+                m_CharacterController.height -= m_CrouchHeightDelta;
+                m_CharacterController.center -= m_CrouchedHitboxCenterDelta;
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
             if (m_PreviouslyCrouching) {
-                m_CharacterController.height = 1.8f;
+                m_CharacterController.height += m_CrouchHeightDelta;
+                m_CharacterController.center += m_CrouchedHitboxCenterDelta;
             }
         }
 
