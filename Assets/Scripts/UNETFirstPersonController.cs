@@ -217,7 +217,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //This is also used for the host to know if it moved to send change messages
             Vector3 prevPosition = transform.position;
             Quaternion prevRotation = transform.rotation;
-            bool prevGrounded = m_CharacterController.isGrounded;
+
             // Store collision values
             CollisionFlags lastFlag = m_CollisionFlags;
 
@@ -270,7 +270,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         entry.lastFlags = lastFlag;
                         entry.position = prevPosition;
                         entry.rotationYaw = transform.rotation.eulerAngles.y;
-                        entry.grounded = prevGrounded;
+                        entry.grounded = m_PreviouslyGrounded;
                         entry.prevCrouching = m_PreviouslyCrouching;
                         AddReconciliation(entry);
                     }
@@ -586,7 +586,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             } else {
                 m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
             }
-            m_MoveDir.y = -1;
+            m_MoveDir.y = -m_StickToGroundForce;
 
             /*
             * JUMP
