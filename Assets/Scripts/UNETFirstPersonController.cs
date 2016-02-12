@@ -586,6 +586,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
             } else {
                 m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
             }
+
+            //When going down things, we need to push the character down to avoid small jumps
+            //10 is a good value
             m_MoveDir.y = -m_StickToGroundForce;
 
             /*
