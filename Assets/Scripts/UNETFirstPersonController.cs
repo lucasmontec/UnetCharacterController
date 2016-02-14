@@ -399,7 +399,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private string getState() {
         string state = "";
         state += "current position (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
-        state += "current rotation (" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + "," + transform.rotation.w + ")\n";
+        state += "current rotation (" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + ", " + transform.rotation.w + ")\n";
         state += "m_IsWalking "+m_IsWalking + "\n";
         state += "m_RunSpeed " + m_RunSpeed + "\n";
         state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
@@ -407,7 +407,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         state += "m_JumpSpeed " + m_JumpSpeed + "\n";
         state += "m_StickToGroundForce " + m_StickToGroundForce + "\n";
         state += "m_GravityMultiplier " + m_GravityMultiplier + "\n";
-        state += "m_firstPersonCharacter " + m_firstPersonCharacter + "\n";
+        state += "m_firstPersonCharacter.rotation " + m_firstPersonCharacter.rotation + "\n";
         state += "m_CrouchedHitboxCenterDelta " + m_CrouchedHitboxCenterDelta + "\n";
         state += "m_CameraCrouchPosDelta " + m_CameraCrouchPosDelta + "\n";
         state += "m_SlowdownFactor " + m_SlowdownFactor + "\n";
@@ -420,6 +420,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
         state += "m_CollisionFlags " + m_CollisionFlags + "\n";
         state += "m_PreviouslyGrounded " + m_PreviouslyGrounded + "\n";
         state += "m_Jumping " + m_Jumping + "\n";
+        state += "Physics.gravity " + Physics.gravity + "\n";
+        state += "Time.fixedDeltaTime " + Time.fixedDeltaTime + "\n";
         return state;
     }
 
