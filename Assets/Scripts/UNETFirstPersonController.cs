@@ -225,9 +225,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
-                FileDebug.Log("\n["+timestamp+"] Client state:\n"+getState(), "ClientLog");
+                FileDebug.Log("\n["+timestamp+"] Client state (pre movement) :\n"+getState(), "ClientLog");
                 //Move the player object
                 PlayerMovement(speed);
+                FileDebug.Log("\n[" + timestamp + "] Client state (post movement) :\n" + getState(), "ClientLog");
             }
             
             //Client sound and camera
@@ -358,10 +359,13 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                         //Debug state
-                        FileDebug.Log("\n[" + currentStamp + "] Server state:\n" + getState(), "ServerLog");
+                        FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
 
                         //Move the player object
                         PlayerMovement(speed);
+
+                        //Debug state
+                        FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
                     }
 
                     //Position acceptance
@@ -528,7 +532,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 if (serverCalculationError > threshold) {
                     Debug.Log("[Server position sim failure " + inputStamp + "] Error (distance): " + serverCalculationError);
-                    Debug.Log("[Server position sim failure " + inputStamp + "] : SV: " + pos+ " CL "+ firstEntry.position);
                 }
 
                 //Check if predicted is different from renconciliated
