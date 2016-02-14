@@ -3,6 +3,9 @@ using System.Collections;
 using UnityEngine.Networking;
 using UnityEngine.Networking.NetworkSystem;
 
+/// <summary>
+/// Simple helper class to debug things to any unity editor in the network.
+/// </summary>
 public class NetworkDebug : NetworkBehaviour {
 
     private static NetworkDebug _instance;
@@ -13,15 +16,15 @@ public class NetworkDebug : NetworkBehaviour {
         NetworkServer.RegisterHandler(NWDebugMsgType, ServerLog);
     }
 
-    public static void Log(string data) {
-        _instance.ILog(data);
-    }
-
     /// <summary>
     /// This prints the log data to the unity editor console.
     /// This will find the console across the network.
     /// </summary>
-    /// <param name="data"></param>
+    /// <param name="data">The data to print to the unity editor</param>
+    public static void Log(string data) {
+        _instance.ILog(data);
+    }
+
     private void ILog(string data) {
 
         //If we are not the editor we need to find the editor

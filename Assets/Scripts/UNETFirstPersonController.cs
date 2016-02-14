@@ -86,7 +86,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     //Reconciliation list - Client side (excludes the host client)
     private int maxReconciliationEntries = 250;
-    private double currentReconciliationStamp = 0;
+    private double currentStamp = 0;
 
     //The list of inputs sent from the player to the server
     //This is server side
@@ -225,6 +225,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
+                FileDebug.Log("["+timestamp+"] Client state:\n"+getState(), "ClientLog");
                 //Move the player object
                 PlayerMovement(speed);
             }
@@ -297,14 +298,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     messageToSend.inputsList = new List<Inputs>(inputsList);
                     connectionToServer.Send(InputListMessage.MSGID, messageToSend);
 
-                   /* if (toSend > 0) {
-                        using(System.IO.StreamWriter file =
-                            new System.IO.StreamWriter(Application.persistentDataPath + @"\DebugClient.txt", true)) {
-                            file.WriteLine("\n\n==================\nInput:\n\n" + clientDebug + "===================");
-
-                            clientDebug = String.Empty;
-                        }
-                    }*/
                     //Clear the input list
                     inputsList.Clear();
                 }
@@ -352,7 +345,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     m_Input = inputs.wasd;
                     m_isCrouching = inputs.crouch;
                     m_Jump = inputs.jump;
-                    currentReconciliationStamp = inputs.timeStamp;
+                    currentStamp = inputs.timeStamp;
 
                     //If need to, apply rotation
                     if (inputs.rotate) {
@@ -364,14 +357,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     if (inputs.move) { 
                         CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
+                        //Debug state
+                        FileDebug.Log("[" + currentStamp + "] Server state:\n" + getState(), "ServerLog");
+
                         //Move the player object
                         PlayerMovement(speed);
                     }
-
-                    serverDebug += "\n" + currentReconciliationStamp;
-                    serverDebug += "\nProcessing input: [" + String.Join(", ", inputs.wasd.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "],\nis walking: " + inputs.walk + ", is crouching: " + inputs.crouch + ", is jumping: " + inputs.jump + ", does rotate: " + inputs.rotate + ", velocity: " + m_CharacterController.velocity + "\n";
-
-                    serverDebug += "\nPosition after applying input: (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
 
                     //Position acceptance
                     //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
@@ -384,16 +375,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 if (dataStep > GetNetworkSendInterval()) {
                     //If we have any changes in position or rotation, we send a messsage
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
-                        RpcClientReceivePosition(currentReconciliationStamp, transform.position, m_MoveDir);
+                        RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
                         //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
                    
-                   /* using (System.IO.StreamWriter file =
-                        new System.IO.StreamWriter(Application.persistentDataPath+@"\Debug.txt", true)) {
-                                    file.WriteLine("\n\n==================\nInput timestamp: " + currentReconciliationStamp+"\n\n"+ serverDebug + "===================");
-                    }*/
-                    serverDebug = "";
                 }
                 dataStep += Time.fixedDeltaTime;
                 m_PreviouslyGrounded = m_CharacterController.isGrounded;
@@ -401,6 +387,37 @@ public class UNETFirstPersonController : NetworkBehaviour {
         }
     }
     //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>FIXED UPDATE
+
+    /// <summary>
+    /// This is a debug method that gets all state variables that are involved in player movement.
+    /// </summary>
+    /// <returns>A string with all variables involved in player movement</returns>
+    private string getState() {
+        string state = "";
+        state += "current position " + transform.position + "\n";
+        state += "current rotation " + transform.rotation + "\n";
+        state += "m_IsWalking "+m_IsWalking + "\n";
+        state += "m_RunSpeed " + m_RunSpeed + "\n";
+        state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
+        state += "m_CrouchHeightDelta " + m_CrouchHeightDelta + "\n";
+        state += "m_JumpSpeed " + m_JumpSpeed + "\n";
+        state += "m_StickToGroundForce " + m_StickToGroundForce + "\n";
+        state += "m_GravityMultiplier " + m_GravityMultiplier + "\n";
+        state += "m_firstPersonCharacter " + m_firstPersonCharacter + "\n";
+        state += "m_CrouchedHitboxCenterDelta " + m_CrouchedHitboxCenterDelta + "\n";
+        state += "m_CameraCrouchPosDelta " + m_CameraCrouchPosDelta + "\n";
+        state += "m_SlowdownFactor " + m_SlowdownFactor + "\n";
+        state += "m_StrafeSpeed " + m_StrafeSpeed + "\n";
+        state += "m_Jump " + m_Jump + "\n";
+        state += "m_isCrouching " + m_isCrouching + "\n";
+        state += "m_PreviouslyCrouching " + m_PreviouslyCrouching + "\n";
+        state += "m_Input " + String.Join(", ", m_Input.ToList<Boolean>().Select(p => p.ToString()).ToArray()) + "\n";
+        state += "m_MoveDir " + m_MoveDir + "\n";
+        state += "m_CollisionFlags " + m_CollisionFlags + "\n";
+        state += "m_PreviouslyGrounded " + m_PreviouslyGrounded + "\n";
+        state += "m_Jumping " + m_Jumping + "\n";
+        return state;
+    }
 
     /// <summary>
     /// Receives the movements and rotations input and process it. 
