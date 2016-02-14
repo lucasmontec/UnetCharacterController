@@ -398,8 +398,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <returns>A string with all variables involved in player movement</returns>
     private string getState() {
         string state = "";
-        state += "current position (" + transform.position.x + "," + transform.position.y + "," + transform.position.z + ")\n";
-        state += "current rotation (" + transform.rotation.x + "," + transform.rotation.y + "," + transform.rotation.z + "," + transform.rotation.w + ")\n";
+        state += "current position (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
+        state += "current rotation (" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + "," + transform.rotation.w + ")\n";
         state += "m_IsWalking "+m_IsWalking + "\n";
         state += "m_RunSpeed " + m_RunSpeed + "\n";
         state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
