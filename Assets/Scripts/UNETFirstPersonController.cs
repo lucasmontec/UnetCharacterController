@@ -225,7 +225,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
-                FileDebug.Log("["+timestamp+"] Client state:\n"+getState(), "ClientLog");
+                FileDebug.Log("\n["+timestamp+"] Client state:\n"+getState(), "ClientLog");
                 //Move the player object
                 PlayerMovement(speed);
             }
@@ -358,7 +358,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                         //Debug state
-                        FileDebug.Log("[" + currentStamp + "] Server state:\n" + getState(), "ServerLog");
+                        FileDebug.Log("\n[" + currentStamp + "] Server state:\n" + getState(), "ServerLog");
 
                         //Move the player object
                         PlayerMovement(speed);
