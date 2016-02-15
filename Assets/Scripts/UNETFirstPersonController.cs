@@ -225,10 +225,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
-                FileDebug.Log("\n["+timestamp+"] Client state (pre movement) :\n"+getState(), "ClientLog");
+                if (isClient && !isServer) {
+                    FileDebug.Log("\n[" + timestamp + "] Client state (pre movement) :\n" + getState(), "ClientLog");
+                }
                 //Move the player object
                 PlayerMovement(speed);
-                FileDebug.Log("\n[" + timestamp + "] Client state (post movement) :\n" + getState(), "ClientLog");
+                if (isClient && !isServer) {
+                    FileDebug.Log("\n[" + timestamp + "] Client state (post movement) :\n" + getState(), "ClientLog");
+                }
             }
             
             //Client sound and camera
