@@ -103,6 +103,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private double lastMassageTime = 0;
     private const double maxDelayBeforeServerSimStop = 10000;
 
+    // To debug wrong movements in server
+    private bool movedLastFrame;
+    private Vector3 lastPos;
+
     //Local reconciliation (authority player)
     private struct ReconciliationEntry {
         public Inputs inputs;
@@ -352,6 +356,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 Inputs inputs;
                 inputs.rotate = false;
 
+                if(transform.position != lastPos && !movedLastFrame) {
+                    FileDebug.Log("Server error!");
+                }
+
                 //If we have inputs, get them and simulate on the server
                 if (inputsList.Count > 0) {
                     inputs = inputsList.Dequeue();
@@ -369,7 +377,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     }
                     
                     //If need to, simulate movement
-                    if (inputs.move) { 
+                    if (inputs.move) {
+                        lastPos = transform.position;
                         CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                         //Debug state
@@ -377,6 +386,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         //Move the player object
                         PlayerMovement(speed);
+
+                        movedLastFrame = transform.position != lastPos;
 
                         //Debug state
                         FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
