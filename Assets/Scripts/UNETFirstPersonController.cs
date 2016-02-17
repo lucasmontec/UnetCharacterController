@@ -268,8 +268,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
 
-                    FileDebug.Log(pre, "ClientLog");
-                    FileDebug.Log(post, "ClientLog");
+                    if (isClient && !isServer) {
+                        FileDebug.Log(pre, "ClientLog");
+                        FileDebug.Log(post, "ClientLog");
+                    }
 
                     // DEBUG POSITION
                     dePos.velocity = m_CharacterController.velocity;
