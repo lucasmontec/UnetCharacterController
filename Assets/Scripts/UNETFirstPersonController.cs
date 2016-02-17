@@ -17,7 +17,6 @@ public struct Inputs {
     public bool crouch;
     public bool jump;
     public bool rotate;
-    public Vector3 calculatedPosition;
 
     public double timeStamp;
 }
@@ -263,7 +262,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.rotate = rotationChanged;
                     inputs.jump = sendJump;
                     inputs.crouch = m_isCrouching;
-                    inputs.calculatedPosition = transform.position;
                     inputs.timeStamp = timestamp;
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
@@ -388,11 +386,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             //FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
                         }
 
-                        //Position acceptance
-                        //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
-                        /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
-                            transform.position = inputs.calculatedPosition;
-                        }*/
                     }  
                 }
                 else {

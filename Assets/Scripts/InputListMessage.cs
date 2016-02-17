@@ -32,7 +32,6 @@ public class InputListMessage : MessageBase {
             writer.Write(i.wasd[2]);//bool
             writer.Write(i.wasd[3]);//bool
             writer.Write(i.yaw);//float
-            writer.Write(i.calculatedPosition);
         }
         writer.FinishMessage();
     }
@@ -67,7 +66,6 @@ public class InputListMessage : MessageBase {
             wasd[3] = reader.ReadBoolean();
             input.wasd = wasd;
             input.yaw = reader.ReadSingle();
-            input.calculatedPosition = reader.ReadVector3();
 
             //Add to the message list
             inputsList.Add(input);
