@@ -1,0 +1,57 @@
+CLIENT:
+
+	*STATE FETCH
+		savePrevGrounded (should be near store)
+		readCurrentStamp
+		readInput
+		
+	*STATE STORE
+		storeSendJump (player movement clears m_Jump)
+		storePrevPos
+		storePrevRot
+		storePrevGrounded
+		storeLstFlags
+		
+	*ACTION
+		playerMovement
+		stepCycleAndCamera
+		processLandingBob (sets m_Jumping to false)
+		
+	*MSG PREPARE
+		checkCrouch
+		checkMoved
+		
+		if  moved or sendJump or crouchChange or rotationChanged then
+			sampleInputs:
+				-yaw = current yaw
+				-pitch = current pitch
+				-wasd = current input
+				-move = moved
+				-walk = current m_isWalking
+				-rotate = rotationChanged
+				-jump = sendJump
+				-crouch = current m_IsCrouching
+				-calculatedPosition = current position (debug - quick fix)
+				-timestamp = current timestamp
+		endif
+		
+		if moved or jumped or crouched then
+			sampleReconciliation:
+				-inputs = lastSampled
+				-lastFlags = lastCollisionFlags
+				-position = prevPosition
+				-rotation = prevRotation
+				-grounded = prevGrounded
+				-crouching = prevCrouching
+		endif
+		
+		resetSendJump
+		resetRotationChanged
+		
+	*MSG SEND
+		if sendMessageTimeStep then
+			prepareInputsListPackage
+			sendToServer
+			
+			clearInputsList
+		endif

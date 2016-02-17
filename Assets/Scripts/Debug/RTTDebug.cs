@@ -8,6 +8,7 @@ using UnityEngine.Networking;
 public class RTTDebug : NetworkBehaviour {
 
     private NetworkManager nwManager;
+    private System.Text.StringBuilder debugString = new System.Text.StringBuilder();
 
     void Start() {
         nwManager = GameObject.FindObjectOfType<NetworkManager>();
@@ -22,7 +23,14 @@ public class RTTDebug : NetworkBehaviour {
             GUI.Label(new Rect(20, 20, 100, 30), "Network manager not found!");
         } else {
             NetworkClient client = nwManager.client;
-            GUI.Label(new Rect(20, 20, 100, 30), (client==null?"Null client":("RTT: "+client.GetRTT().ToString())));
+            debugString.Remove(0, debugString.Length);
+            if (client != null) {
+                debugString.Append("RTT: ");
+                debugString.Append(client.GetRTT().ToString());
+            } else {
+                debugString.Append("Null client");
+            }
+            GUI.Label(new Rect(20, 20, 100, 30), debugString.ToString());
         }
     }
 }

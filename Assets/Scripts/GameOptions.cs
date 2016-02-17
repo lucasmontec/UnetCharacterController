@@ -7,8 +7,9 @@ public class GameOptions : MonoBehaviour {
     [Range(0.05f, 2f)]
     private float timescale = 1f;
 
-	void Start () {
+	void Awake () {
         Time.timeScale = timescale;
-	}
+        //Application.targetFrameRate = 10;
+    }
 	
 }
