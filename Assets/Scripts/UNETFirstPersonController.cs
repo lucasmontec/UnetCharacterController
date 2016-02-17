@@ -268,7 +268,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
 
-                    if (isClient && !isServer) {
+                    if (isClient) {
                         FileDebug.Log(pre, "ClientLog");
                         FileDebug.Log(post, "ClientLog");
                     }
@@ -878,7 +878,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <param name="hit"></param>
     //Shared
-    private void OnControllerColliderHit(ControllerColliderHit hit) {
+    /*private void OnControllerColliderHit(ControllerColliderHit hit) {
         Rigidbody body = hit.collider.attachedRigidbody;
         //dont move the rigidbody if the character is on top of it
         if (m_CollisionFlags == CollisionFlags.Below) {
@@ -889,7 +889,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             return;
         }
         body.AddForceAtPosition(m_CharacterController.velocity * 0.1f, hit.point, ForceMode.Impulse);
-    }
+    }*/
 
     /// <summary>
     /// Checks if any vertical movement has been applied.
