@@ -17,6 +17,7 @@ public struct Inputs {
     public bool crouch;
     public bool jump;
     public bool rotate;
+    public Vector3 calculatedPosition;
 
     public double timeStamp;
 }
@@ -27,23 +28,41 @@ public struct Inputs {
 //[NetworkSettings(channel = 0, sendInterval = 0.5f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
-    [SerializeField] private float m_WalkSpeed;
-    [SerializeField] private float m_RunSpeed;
-    [SerializeField] [Range(0f, 1f)]    private float m_RunstepLenghten;
-    [SerializeField] private float m_CrouchSpeed = 3f;
-    [SerializeField] private float m_CrouchHeightDelta = 0.6f;
-    [SerializeField] private float m_JumpSpeed = 10f;
-    [SerializeField] private float m_StickToGroundForce;
-    [SerializeField] private float m_GravityMultiplier;
-    [SerializeField] private UnityStandardAssets.Characters.FirstPerson.MouseLook m_MouseLook;
-    [SerializeField] private bool m_UseFovKick;
-    [SerializeField] private FOVKick m_FovKick = new FOVKick();
-    [SerializeField] private LerpControlledBob m_JumpBob = new LerpControlledBob();
-    [SerializeField] private float m_StepInterval;
-    [SerializeField] private AudioClip[] m_FootstepSounds;    // an array of footstep sounds that will be randomly selected from.
-    [SerializeField] private AudioClip m_JumpSound;           // the sound played when character leaves the ground.
-    [SerializeField] private AudioClip m_LandSound;           // the sound played when character touches back on ground.
-    [SerializeField] private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
+    [SerializeField]
+    private float m_WalkSpeed;
+    [SerializeField]
+    private float m_RunSpeed;
+    [SerializeField]
+    [Range(0f, 1f)]
+    private float m_RunstepLenghten;
+    [SerializeField]
+    private float m_CrouchSpeed = 3f;
+    [SerializeField]
+    private float m_CrouchHeightDelta = 0.6f;
+    [SerializeField]
+    private float m_JumpSpeed = 10f;
+    [SerializeField]
+    private float m_StickToGroundForce;
+    [SerializeField]
+    private float m_GravityMultiplier;
+    [SerializeField]
+    private UnityStandardAssets.Characters.FirstPerson.MouseLook m_MouseLook;
+    [SerializeField]
+    private bool m_UseFovKick;
+    [SerializeField]
+    private FOVKick m_FovKick = new FOVKick();
+    [SerializeField]
+    private LerpControlledBob m_JumpBob = new LerpControlledBob();
+    [SerializeField]
+    private float m_StepInterval;
+    [SerializeField]
+    private AudioClip[] m_FootstepSounds;    // an array of footstep sounds that will be randomly selected from.
+    [SerializeField]
+    private AudioClip m_JumpSound;           // the sound played when character leaves the ground.
+    [SerializeField]
+    private AudioClip m_LandSound;           // the sound played when character touches back on ground.
+    [SerializeField]
+    private Transform m_firstPersonCharacter; //The gameObject that contains the camera and applies the yaw rotations
     // The delta center of hitbox when crouched
     private Vector3 m_CrouchedHitboxCenterDelta;
     // The delta of the camera's position when crouched
@@ -127,7 +146,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         reconciliationList.Add(entry);
 
         //Limit the list size
-        if (reconciliationList.Count > maxReconciliationEntries)
+        if(reconciliationList.Count > maxReconciliationEntries)
             reconciliationList.RemoveAt(0);
     }
 
@@ -139,7 +158,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     // Use this for initialization
     private void Start() {
         //Client initialization
-        if (isLocalPlayer) {
+        if(isLocalPlayer) {
             m_CharacterController = GetComponent<CharacterController>();
             m_Camera = GetComponentInChildren<Camera>();
             m_OriginalCameraPosition = m_Camera.transform.localPosition;
@@ -149,7 +168,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             m_AudioSource = GetComponent<AudioSource>();
             m_MouseLook.Init(transform, m_Camera.transform);
         }
-        if (isServer) { // Server side initialization
+        if(isServer) { // Server side initialization
             m_CharacterController = GetComponent<CharacterController>();
         }
 
@@ -163,16 +182,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private void Update() {
 
         //Client side jump
-        if (isLocalPlayer) {
+        if(isLocalPlayer) {
             Quaternion lastCharacterRotation = transform.rotation;
             Quaternion lastCameraRotation = m_firstPersonCharacter.rotation;
             RotateView();
-            if (Quaternion.Angle(lastCharacterRotation, transform.rotation) > 0 || Quaternion.Angle(lastCameraRotation, m_firstPersonCharacter.rotation) > 0) {
+            if(Quaternion.Angle(lastCharacterRotation, transform.rotation) > 0 || Quaternion.Angle(lastCameraRotation, m_firstPersonCharacter.rotation) > 0) {
                 rotationChanged = true;
             }
 
             // The jump state needs to read here to make sure it is not missed
-            if (m_CharacterController.isGrounded)
+            if(m_CharacterController.isGrounded)
                 m_Jump |= CrossPlatformInputManager.GetButtonDown("Jump");
         }
     }
@@ -194,7 +213,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
         //If this is running at the local player (client with authoritative control or host client)
         //We run normal FPS controller (prediction)
-        if (isLocalPlayer) {
+        if(isLocalPlayer) {
             //This must be before move to check if move grounded the character
             m_PreviouslyGrounded = m_CharacterController.isGrounded;
 
@@ -204,7 +223,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             bool sendCrouch = m_isCrouching;
 
             //Input from user or simulated
-            if (inputSimulation) {
+            if(inputSimulation) {
                 SimInput(out speed);
             }
             else {
@@ -226,17 +245,17 @@ public class UNETFirstPersonController : NetworkBehaviour {
             String pre = "", post = "";
 
             //If we have predicion, we use the input here to move the character
-            if (prediction) {
-                if (isClient && !isServer) {
+            if(prediction) {
+                if(isClient && !isServer) {
                     pre = "\n[" + timestamp + "] Client state (pre movement) :\n" + getState();
                 }
                 //Move the player object
                 PlayerMovement(speed);
-                if (isClient && !isServer) {
+                if(isClient && !isServer) {
                     post = "\n[" + timestamp + "] Client state (post movement) :\n" + getState();
                 }
             }
-            
+
             //Client sound and camera
             ProgressStepCycle(speed);
 
@@ -247,11 +266,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             //OWNER CLIENTS THAT ARE NOT THE HOST
             //CLIENTS THAT ARE NOT THE SERVER
-            if (!isServer) {
+            if(!isServer) {
                 bool crouchChange = m_isCrouching != sendCrouch;
                 bool moved = Vector3.Distance(prevPosition, transform.position) > 0 || m_Input[0] || m_Input[1]
                     || m_Input[2] || m_Input[3];
-                if (moved || sendJump || crouchChange || rotationChanged) {
+                if(moved || sendJump || crouchChange || rotationChanged) {
                     //Store all inputs generated between msgs to send to server
                     Inputs inputs = new Inputs();
                     inputs.yaw = transform.rotation.eulerAngles.y;
@@ -262,14 +281,15 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.rotate = rotationChanged;
                     inputs.jump = sendJump;
                     inputs.crouch = m_isCrouching;
+                    inputs.calculatedPosition = transform.position;
                     inputs.timeStamp = timestamp;
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
 
-                    /*if (isClient) {
+                    if(isClient) {
                         FileDebug.Log(pre, "ClientLog");
                         FileDebug.Log(post, "ClientLog");
-                    }*/
+                    }
 
                     // DEBUG POSITION
                     dePos.velocity = m_CharacterController.velocity;
@@ -277,7 +297,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     debugClientPos.Enqueue(dePos);
 
                     //If we moved, then we need to store reconciliation
-                    if (moved || sendJump || crouchChange) {
+                    if(moved || sendJump || crouchChange) {
                         // Create reconciliation entry
                         ReconciliationEntry entry = new ReconciliationEntry();
                         entry.inputs = inputs;
@@ -288,7 +308,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         entry.prevCrouching = m_PreviouslyCrouching;
                         AddReconciliation(entry);
                     }
-                    
+
                     //Clear the jump to send
                     sendJump = false;
 
@@ -299,13 +319,13 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
 
                 //Only send input at the network send interval
-                if (dataStep > GetNetworkSendInterval()) {
+                if(dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
 
                     //Debug.Log("Sending messages to server");
                     int toSend = inputsList.Count;
                     //Send input to the server
-                    if (inputsList.Count > 0) {
+                    if(inputsList.Count > 0) {
                         InputListMessage messageToSend = new InputListMessage();
                         messageToSend.inputsList = new List<Inputs>(inputsList);
                         connectionToServer.Send(InputListMessage.MSGID, messageToSend);
@@ -320,10 +340,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
             //This is for the host player to send its position to all other clients
             //HOST (THE CLIENT ON THE SERVER) CLIENT
-            if (isServer) {
-                if (dataStep > GetNetworkSendInterval()) {
+            if(isServer) {
+                if(dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
-                    if (Vector3.Distance(transform.position, prevPosition) > 0 || rotationChanged) {
+                    if(Vector3.Distance(transform.position, prevPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
                         RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
                         //Debug.Log("Sent host pos");
@@ -336,7 +356,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         * SERVER SIDE
         */
         else { //If we are on the server, we process commands from the client instead, and generate update messages
-            if (isServer) {
+            if(isServer) {
                 if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
                     FileDebug.Log("\n[" + currentStamp + "] Server grounded player.", "ServerLog");
                 }
@@ -349,6 +369,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Create the struct to read possible input to calculate
                 Inputs inputs;
                 inputs.rotate = false;
+
+                if(transform.position != lastPos && !movedLastFrame) {
+                    FileDebug.Log("Server error!", "ServerLog");
+                }
 
                 //If we have inputs, get them and simulate on the server
                 if(inputsList.Count > 0) {
@@ -363,19 +387,19 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         //If need to, apply rotation
                         if(inputs.rotate) {
-                            //FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
+                            FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
                             transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
                             m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
                         }
 
                         //If need to, simulate movement
                         if(inputs.move) {
-                            //FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
+                            FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
                             lastPos = transform.position;
                             CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                             //Debug state
-                            //FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
+                            FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
 
                             //Move the player object
                             PlayerMovement(speed);
@@ -383,25 +407,30 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             movedLastFrame = transform.position != lastPos;
 
                             //Debug state
-                            //FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
+                            FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
                         }
 
-                    }  
+                        //Position acceptance
+                        //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
+                        /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
+                            transform.position = inputs.calculatedPosition;
+                        }*/
+                    }
                 }
                 else {
                     FileDebug.Log("\n[" + currentStamp + "] Server input list empty.", "ServerLog");
                 }
 
                 //If its time to send messages
-                if (dataStep > GetNetworkSendInterval()) {
+                if(dataStep > GetNetworkSendInterval()) {
                     //If we have any changes in position or rotation, we send a messsage
-                    if (Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
+                    if(Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
                         RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
                         FileDebug.Log("\n[" + currentStamp + "] Server sent rpc.", "ServerLog");
                         //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
-                   
+
                 }
                 dataStep += Time.fixedDeltaTime;
                 m_PreviouslyGrounded = m_CharacterController.isGrounded;
@@ -418,7 +447,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         string state = "";
         state += "current position (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
         state += "current rotation (" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + ", " + transform.rotation.w + ")\n";
-        state += "m_IsWalking "+m_IsWalking + "\n";
+        state += "m_IsWalking " + m_IsWalking + "\n";
         //state += "m_RunSpeed " + m_RunSpeed + "\n";
         //state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
         //state += "m_CrouchHeightDelta " + m_CrouchHeightDelta + "\n";
@@ -451,7 +480,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         InputListMessage msg = netMsg.ReadMessage<InputListMessage>();
 
         //Add all inputs
-        msg.inputsList.ForEach(e => inputsList.Enqueue(e) );
+        msg.inputsList.ForEach(e => inputsList.Enqueue(e));
 
         //Debug.Log("Stamp of last input: " + stamp);
         //Debug.Log("Current input list size: " + inputsList.Count);
@@ -467,13 +496,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="inputStamp">This is the timestamp when the client sent this input originally.</param>
     [ClientRpc]
     private void RpcClientReceivePosition(double inputStamp, Vector3 pos, Vector3 movementVector) {
-        if (reconciliation && isLocalPlayer) {// RECONCILIATION for owner players
+        if(reconciliation && isLocalPlayer) {// RECONCILIATION for owner players
             //Check if this stamp is in the list
-            if (reconciliationList.Count == 0) {
+            if(reconciliationList.Count == 0) {
                 //Nothing to reconciliate, apply server position
                 //Debug.Log(transform.position.ToString() + " : " + pos.ToString()); NUNCA REMOVER
                 transform.position = pos;
-            } else {
+            }
+            else {
                 //Reconciliation starting
                 //Debug.Log("Stamp received from server: "+inputStamp);
 
@@ -489,8 +519,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 Vector3 predicted = transform.position;
 
                 //If the incoming position is too old, ignore
-                if (inputStamp < firstEntry.inputs.timeStamp) {
-                    debugError += "Ignored! " + inputStamp+" first in list was "+ firstEntry.inputs.timeStamp + "\n";
+                if(inputStamp < firstEntry.inputs.timeStamp) {
+                    debugError += "Ignored! " + inputStamp + " first in list was " + firstEntry.inputs.timeStamp + "\n";
                     return;
                 }
 
@@ -517,7 +547,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                 // Reapply all the inputs that aren't processed by the server yet.
                 int count = 0;
-                if (reconciliationList.Count > 0) {
+                if(reconciliationList.Count > 0) {
                     //debugError += "The first position for reconciliation is: " + reconciliationList[0].position + "\n";
                     //Get the lastest collision flags
                     m_CollisionFlags = reconciliationList[0].lastFlags;
@@ -529,7 +559,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Debug.Log("SStamp: "+inputStamp+" CStamp: "+ clientForServerStamp.inputs.timeStamp);
 
                     float speed = 0f;
-                    foreach (ReconciliationEntry e in reconciliationList) {
+                    foreach(ReconciliationEntry e in reconciliationList) {
                         Inputs i = e.inputs;
                         m_Input = i.wasd;
                         m_IsWalking = i.walk;
@@ -540,31 +570,32 @@ public class UNETFirstPersonController : NetworkBehaviour {
                         CalcSpeed(out speed);
 
                         PlayerMovement(speed, e.grounded, e.position, e.rotationYaw);
-                        debugError += "("+(count++)+")Intermediate rec position: " + transform.position+"\n";
+                        debugError += "(" + (count++) + ")Intermediate rec position: " + transform.position + "\n";
                     }
                 }
 
-                debugError += "The final reconciliated position is: " + transform.position+"\n";
+                debugError += "The final reconciliated position is: " + transform.position + "\n";
                 debugError += "The predicted position was: " + predicted + "\n";
 
                 //Check if the server calculated the position in a wrong way
 
-                if (serverCalculationError > threshold) {
+                if(serverCalculationError > threshold) {
                     Debug.Log("[Server position sim failure " + inputStamp + "] Error (distance): " + serverCalculationError);
                 }
 
                 //Check if predicted is different from renconciliated
                 float recError = Vector3.Distance(predicted, transform.position);
-                if (recError > threshold) {
-                    debugError += "Total error: " + recError+"\n";
-                    debugError += "(Logging only errors above: " + threshold+")";
-                    if (serverCalculationError > threshold) {
+                if(recError > threshold) {
+                    debugError += "Total error: " + recError + "\n";
+                    debugError += "(Logging only errors above: " + threshold + ")";
+                    if(serverCalculationError > threshold) {
                         Debug.Log("[Reconciliation error due to server error] Log:\n" + debugError);
-                    } else {
+                    }
+                    else {
                         Debug.Log("[Reconciliation error] Log:\n" + debugError);
                     }
                 }
-                
+
                 //Restore collision flags
                 m_CollisionFlags = cflags;
                 //Restore jump state
@@ -618,18 +649,20 @@ public class UNETFirstPersonController : NetworkBehaviour {
                            m_CharacterController.height / 2f);
         desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;*/
 
-        if ( grounded ) { //ON GROUND
+        if(grounded) { //ON GROUND
             /*
             * NORMALIZED MOVEMENT WITH SLOW DOWN
             */
-            if (Math.Abs(desiredMove.x) > 0) {
+            if(Math.Abs(desiredMove.x) > 0) {
                 m_MoveDir.x = desiredMove.x * speed;
-            } else {
+            }
+            else {
                 m_MoveDir.x = m_MoveDir.x * m_SlowdownFactor;
             }
-            if (Math.Abs(desiredMove.z) > 0) {
+            if(Math.Abs(desiredMove.z) > 0) {
                 m_MoveDir.z = desiredMove.z * speed;
-            } else {
+            }
+            else {
                 m_MoveDir.z = m_MoveDir.z * m_SlowdownFactor;
             }
 
@@ -640,11 +673,12 @@ public class UNETFirstPersonController : NetworkBehaviour {
             /*
             * JUMP
             */
-            if (m_Jump) {
+            if(m_Jump) {
                 m_MoveDir.y = m_JumpSpeed;
                 m_Jump = false;
             }
-        } else { //ON AIR
+        }
+        else { //ON AIR
             /*
             * STRAFE
             */
@@ -654,7 +688,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //THe desired strafe dot is also the component of the desired (global) strafe movement along the local right vector
             float desiredStrafeDot = Vector3.Dot(desiredStrafe, right);
             //Here we do this massive if to check if the strafe is valid
-            if (
+            if(
                 /*Going right but not at full speed, and want to accelerate*/
                 (movementDot < 5f && movementDot > 0f && desiredStrafeDot > 0f)
                 ||
@@ -688,9 +722,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="speed">Player speed.</param>
     private void CalcSpeed(out float speed) {
         // Set speed if crouching
-        if (m_isCrouching) {
+        if(m_isCrouching) {
             speed = m_CrouchSpeed;
-            if (!m_PreviouslyCrouching) {
+            if(!m_PreviouslyCrouching) {
                 // If the player was NOT crouching in the previous frame,
                 // but is crouching in the current, set his height to the CrouchHeight
                 Crouch();
@@ -699,7 +733,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
-            if (m_PreviouslyCrouching) {
+            if(m_PreviouslyCrouching) {
                 // If the player WAS crouching in the previous frame,
                 // but is not crouching in the current, set his height to standard CharacterHeight
                 Uncrouch();
@@ -717,14 +751,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="speed"></param>
     [Client]
     private void ProgressStepCycle(float speed) {
-        if (m_CharacterController.velocity.sqrMagnitude > 0 &&
+        if(m_CharacterController.velocity.sqrMagnitude > 0 &&
             (HorizontalMovement(m_Input[1], m_Input[3]) != 0 ||
             VerticalMovement(m_Input[0], m_Input[2]) != 0)) {
             m_StepCycle += (m_CharacterController.velocity.magnitude + (speed * (m_IsWalking ? 1f : m_RunstepLenghten))) *
                          Time.fixedDeltaTime;
         }
 
-        if (!(m_StepCycle > m_NextStep)) {
+        if(!(m_StepCycle > m_NextStep)) {
             return;
         }
 
@@ -743,8 +777,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
         simStep += Time.deltaTime;
 
         //If not in time to change sim, return the speed
-        if (simStep < currentSimStep) {
-            if (m_isCrouching) {
+        if(simStep < currentSimStep) {
+            if(m_isCrouching) {
                 speed = m_CrouchSpeed;
             }
             else {
@@ -771,16 +805,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
         m_isCrouching = (Random.value > 0.5f);
 
         // Set settings if crouching
-        if (m_isCrouching) {
+        if(m_isCrouching) {
             speed = m_CrouchSpeed;
-            if (!m_PreviouslyCrouching) {
+            if(!m_PreviouslyCrouching) {
                 Crouch();
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
-            if (m_PreviouslyCrouching) {
+            if(m_PreviouslyCrouching) {
                 Uncrouch();
             }
         }
@@ -790,7 +824,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
         // handle speed change to give an fov kick
         // only if the player is going to a run, is running and the fovkick is to be used
-        if (m_IsWalking != waswalking && m_UseFovKick && m_CharacterController.velocity.sqrMagnitude > 0) {
+        if(m_IsWalking != waswalking && m_UseFovKick && m_CharacterController.velocity.sqrMagnitude > 0) {
             StopAllCoroutines();
             StartCoroutine(!m_IsWalking ? m_FovKick.FOVKickUp() : m_FovKick.FOVKickDown());
         }
@@ -818,16 +852,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
         m_isCrouching = CrossPlatformInputManager.GetButton("Crouch");
 
         // Set settings if crouching
-        if (m_isCrouching) {
+        if(m_isCrouching) {
             speed = m_CrouchSpeed;
-            if (!m_PreviouslyCrouching) {
+            if(!m_PreviouslyCrouching) {
                 Crouch();
             }
         }
         // If not crouching, set the desired speed to be walking or running
         else {
             speed = m_IsWalking ? m_WalkSpeed : m_RunSpeed;
-            if (m_PreviouslyCrouching) {
+            if(m_PreviouslyCrouching) {
                 Uncrouch();
             }
         }
@@ -837,7 +871,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
         // handle speed change to give an fov kick
         // only if the player is going to a run, is running and the fovkick is to be used
-        if (m_IsWalking != waswalking && m_UseFovKick && m_CharacterController.velocity.sqrMagnitude > 0) {
+        if(m_IsWalking != waswalking && m_UseFovKick && m_CharacterController.velocity.sqrMagnitude > 0) {
             StopAllCoroutines();
             StartCoroutine(!m_IsWalking ? m_FovKick.FOVKickUp() : m_FovKick.FOVKickDown());
         }
@@ -901,9 +935,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="S"> The bool that indicates that S is pressed. </param>
     /// <returns></returns>
     private sbyte VerticalMovement(bool W, bool S) {
-        if (W && !S)
+        if(W && !S)
             return 1;
-        if (S && !W)
+        if(S && !W)
             return -1;
 
         return 0;
@@ -915,9 +949,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     /// <returns></returns>
     private float ReturnSpeed() {
-        if (m_isCrouching)
+        if(m_isCrouching)
             return m_CrouchSpeed;
-        if (m_IsWalking)
+        if(m_IsWalking)
             return m_WalkSpeed;
 
         return m_RunSpeed;
@@ -931,9 +965,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// <param name="D"> The bool that indicates that D is pressed. </param>
     /// <returns></returns>
     private sbyte HorizontalMovement(bool A, bool D) {
-        if (D && !A)
+        if(D && !A)
             return 1;
-        if (A && !D)
+        if(A && !D)
             return -1;
 
         return 0;
@@ -945,7 +979,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     /// </summary>
     [Client]
     private void PlayFootStepAudio() {
-        if (!m_CharacterController.isGrounded) {
+        if(!m_CharacterController.isGrounded) {
             return;
         }
         // Pick & play a random footstep sound from the array,
