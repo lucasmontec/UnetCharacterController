@@ -357,7 +357,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 inputs.rotate = false;
 
                 if(transform.position != lastPos && !movedLastFrame) {
-                    FileDebug.Log("Server error!");
+                    FileDebug.Log("Server error!", "ServerLog");
                 }
 
                 //If we have inputs, get them and simulate on the server
