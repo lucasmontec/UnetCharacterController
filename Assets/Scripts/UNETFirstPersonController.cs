@@ -268,10 +268,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
 
-                    if (isClient) {
+                    /*if (isClient) {
                         FileDebug.Log(pre, "ClientLog");
                         FileDebug.Log(post, "ClientLog");
-                    }
+                    }*/
 
                     // DEBUG POSITION
                     dePos.velocity = m_CharacterController.velocity;
@@ -352,10 +352,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 Inputs inputs;
                 inputs.rotate = false;
 
-                if(transform.position != lastPos && !movedLastFrame) {
-                    FileDebug.Log("Server error!", "ServerLog");
-                }
-
                 //If we have inputs, get them and simulate on the server
                 if(inputsList.Count > 0) {
                     while(inputsList.Count > 0) {
@@ -369,19 +365,19 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         //If need to, apply rotation
                         if(inputs.rotate) {
-                            FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
+                            //FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
                             transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
                             m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
                         }
 
                         //If need to, simulate movement
                         if(inputs.move) {
-                            FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
+                            //FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
                             lastPos = transform.position;
                             CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
                             //Debug state
-                            FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
+                            //FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
 
                             //Move the player object
                             PlayerMovement(speed);
@@ -389,7 +385,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             movedLastFrame = transform.position != lastPos;
 
                             //Debug state
-                            FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
+                            //FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
                         }
 
                         //Position acceptance
