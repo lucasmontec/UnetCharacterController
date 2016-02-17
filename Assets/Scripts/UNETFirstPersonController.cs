@@ -104,7 +104,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private const double maxDelayBeforeServerSimStop = 10000;
 
     // To debug wrong movements in server
-    private bool movedLastFrame;
+    private bool movedLastFrame = true;
     private Vector3 lastPos;
 
     //Local reconciliation (authority player)
