@@ -230,7 +230,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             String pre = "", post = "";
 
             //If we have predicion, we use the input here to move the character
-            if (prediction || isServer) {
+            if (prediction) {
                 if (isClient && !isServer) {
                     pre = "\n[" + timestamp + "] Client state (pre movement) :\n" + getState();
                 }
@@ -434,7 +434,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         state += "m_IsWalking "+m_IsWalking + "\n";
         //state += "m_RunSpeed " + m_RunSpeed + "\n";
         //state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
-        state += "m_CrouchHeightDelta " + m_CrouchHeightDelta + "\n";
+        //state += "m_CrouchHeightDelta " + m_CrouchHeightDelta + "\n";
         //state += "m_JumpSpeed " + m_JumpSpeed + "\n";
         //state += "m_StickToGroundForce " + m_StickToGroundForce + "\n";
         //state += "m_GravityMultiplier " + m_GravityMultiplier + "\n";
