@@ -6,6 +6,7 @@ using UnityStandardAssets.CrossPlatformInput;
 using UnityStandardAssets.Utility;
 using System.Linq;
 using Random = UnityEngine.Random;
+using System.Threading;
 
 // Input and results structs
 public struct Inputs {
@@ -192,7 +193,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
             // The jump state needs to read here to make sure it is not missed
             if(m_CharacterController.isGrounded)
                 m_Jump |= CrossPlatformInputManager.GetButtonDown("Jump");
+
+            NetworkDebug.Log("Client normal");
         }
+        else
+            NetworkDebug.Log("Server normal");
     }
 
     string serverDebug = String.Empty;
@@ -333,12 +338,16 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
                 dataStep += Time.fixedDeltaTime;
             }
+            NetworkDebug.Log("Client fixed");
+            Thread.Sleep(7);
         }
         /*
         * SERVER SIDE
         */
         else { //If we are on the server, we process commands from the client instead, and generate update messages
             if(isServer) {
+                NetworkDebug.Log("Server fixed");
+                Thread.Sleep(7);
 
                 //Store state
                 Vector3 lastPosition = transform.position;
