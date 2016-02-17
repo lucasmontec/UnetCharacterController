@@ -81,7 +81,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
     private Vector3 m_OriginalCameraPosition;
     private float m_StepCycle;
     private float m_NextStep;
-    private bool m_Jumping;
     private AudioSource m_AudioSource;
 
     //Reconciliation list - Client side (excludes the host client)
@@ -148,13 +147,11 @@ public class UNETFirstPersonController : NetworkBehaviour {
             m_FovKick.Setup(m_Camera);
             m_StepCycle = 0f;
             m_NextStep = m_StepCycle / 2f;
-            m_Jumping = false;
             m_AudioSource = GetComponent<AudioSource>();
             m_MouseLook.Init(transform, m_Camera.transform);
         }
         if (isServer) { // Server side initialization
             m_CharacterController = GetComponent<CharacterController>();
-            m_Jumping = false;
         }
 
         m_CrouchedHitboxCenterDelta = new Vector3(0f, m_CrouchHeightDelta * 0.5f, 0f);
@@ -247,7 +244,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
                 StartCoroutine(m_JumpBob.DoBobCycle());
                 PlayLandingSound();
-                m_Jumping = false;
             }
 
             //OWNER CLIENTS THAT ARE NOT THE HOST
@@ -345,7 +341,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (isServer) {
                 if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
                     FileDebug.Log("\n[" + currentStamp + "] Server grounded player.", "ServerLog");
-                    m_Jumping = false;
                 }
 
                 //Store state
@@ -450,7 +445,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
         state += "m_MoveDir " + m_MoveDir + "\n";
         state += "m_CollisionFlags " + m_CollisionFlags + "\n";
         state += "m_PreviouslyGrounded " + m_PreviouslyGrounded + "\n";
-        state += "m_Jumping " + m_Jumping + "\n";
         //state += "Physics.gravity " + Physics.gravity + "\n";
         //state += "Time.fixedDeltaTime " + Time.fixedDeltaTime + "\n";
         return state;
@@ -657,7 +651,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if (m_Jump) {
                 m_MoveDir.y = m_JumpSpeed;
                 m_Jump = false;
-                m_Jumping = true;
             }
         } else { //ON AIR
             /*
