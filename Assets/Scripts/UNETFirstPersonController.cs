@@ -223,15 +223,17 @@ public class UNETFirstPersonController : NetworkBehaviour {
             // Store collision values
             CollisionFlags lastFlag = m_CollisionFlags;
 
+            String pre = "", post = "";
+
             //If we have predicion, we use the input here to move the character
             if (prediction || isServer) {
                 if (isClient && !isServer) {
-                    FileDebug.Log("\n[" + timestamp + "] Client state (pre movement) :\n" + getState(), "ClientLog");
+                    pre = "\n[" + timestamp + "] Client state (pre movement) :\n" + getState();
                 }
                 //Move the player object
                 PlayerMovement(speed);
                 if (isClient && !isServer) {
-                    FileDebug.Log("\n[" + timestamp + "] Client state (post movement) :\n" + getState(), "ClientLog");
+                    post = "\n[" + timestamp + "] Client state (post movement) :\n" + getState();
                 }
             }
             
@@ -265,6 +267,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.timeStamp = timestamp;
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
+
+                    FileDebug.Log(pre, "ClientLog");
+                    FileDebug.Log(post, "ClientLog");
+
                     // DEBUG POSITION
                     dePos.velocity = m_CharacterController.velocity;
                     dePos.position = transform.position;
@@ -299,12 +305,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //Debug.Log("Sending messages to server");
                     int toSend = inputsList.Count;
                     //Send input to the server
-                    InputListMessage messageToSend = new InputListMessage();
-                    messageToSend.inputsList = new List<Inputs>(inputsList);
-                    connectionToServer.Send(InputListMessage.MSGID, messageToSend);
+                    if (inputsList.Count > 0) {
+                        InputListMessage messageToSend = new InputListMessage();
+                        messageToSend.inputsList = new List<Inputs>(inputsList);
+                        connectionToServer.Send(InputListMessage.MSGID, messageToSend);
 
-                    //Clear the input list
-                    inputsList.Clear();
+                        //Clear the input list
+                        inputsList.Clear();
+                    }
                 }
 
                 dataStep += Time.fixedDeltaTime;
