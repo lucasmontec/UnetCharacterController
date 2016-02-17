@@ -24,8 +24,8 @@ public struct Inputs {
 
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(AudioSource))]
-//[NetworkSettings(channel = 0, sendInterval = 0.02f)]
-[NetworkSettings(channel = 0, sendInterval = 0.5f)]
+[NetworkSettings(channel = 0, sendInterval = 0.02f)]
+//[NetworkSettings(channel = 0, sendInterval = 0.5f)]
 public class UNETFirstPersonController : NetworkBehaviour {
     private bool m_IsWalking;
     [SerializeField] private float m_WalkSpeed;
@@ -357,46 +357,49 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 }
 
                 //If we have inputs, get them and simulate on the server
-                if (inputsList.Count > 0) {
-                    inputs = inputsList.Dequeue();
+                if(inputsList.Count > 0) {
+                    while(inputsList.Count > 0) {
+                        inputs = inputsList.Dequeue();
 
-                    m_IsWalking = inputs.walk;
-                    m_Input = inputs.wasd;
-                    m_isCrouching = inputs.crouch;
-                    m_Jump = inputs.jump;
-                    currentStamp = inputs.timeStamp;
+                        m_IsWalking = inputs.walk;
+                        m_Input = inputs.wasd;
+                        m_isCrouching = inputs.crouch;
+                        m_Jump = inputs.jump;
+                        currentStamp = inputs.timeStamp;
 
-                    //If need to, apply rotation
-                    if (inputs.rotate) {
-                        FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
-                        transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
-                        m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
-                    }
-                    
-                    //If need to, simulate movement
-                    if (inputs.move) {
-                        FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
-                        lastPos = transform.position;
-                        CalcSpeed(out speed); //Server-side method to the speed out of input from clients
+                        //If need to, apply rotation
+                        if(inputs.rotate) {
+                            FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
+                            transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
+                            m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
+                        }
 
-                        //Debug state
-                        FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
+                        //If need to, simulate movement
+                        if(inputs.move) {
+                            FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
+                            lastPos = transform.position;
+                            CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
-                        //Move the player object
-                        PlayerMovement(speed);
+                            //Debug state
+                            FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
 
-                        movedLastFrame = transform.position != lastPos;
+                            //Move the player object
+                            PlayerMovement(speed);
 
-                        //Debug state
-                        FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
-                    }
+                            movedLastFrame = transform.position != lastPos;
 
-                    //Position acceptance
-                    //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
-                    /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
-                        transform.position = inputs.calculatedPosition;
-                    }*/
-                } else {
+                            //Debug state
+                            FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
+                        }
+
+                        //Position acceptance
+                        //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
+                        /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
+                            transform.position = inputs.calculatedPosition;
+                        }*/
+                    }  
+                }
+                else {
                     FileDebug.Log("\n[" + currentStamp + "] Server input list empty.", "ServerLog");
                 }
 
@@ -521,7 +524,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Apply 'de' received movement
                 m_MoveDir = movementVector;
 
-                float threshold = 0.005f;
+                float threshold = 0.0001f;
 
                 // Reapply all the inputs that aren't processed by the server yet.
                 int count = 0;
