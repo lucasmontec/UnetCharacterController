@@ -344,6 +344,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
         else { //If we are on the server, we process commands from the client instead, and generate update messages
             if (isServer) {
                 if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
+                    FileDebug.Log("\n[" + currentStamp + "] Server grounded player.", "ServerLog");
                     m_Jumping = false;
                 }
 
@@ -372,12 +373,14 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                     //If need to, apply rotation
                     if (inputs.rotate) {
+                        FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
                         transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
                         m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
                     }
                     
                     //If need to, simulate movement
                     if (inputs.move) {
+                        FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
                         lastPos = transform.position;
                         CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
@@ -398,6 +401,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
                         transform.position = inputs.calculatedPosition;
                     }*/
+                } else {
+                    FileDebug.Log("\n[" + currentStamp + "] Server input list empty.", "ServerLog");
                 }
 
                 //If its time to send messages
@@ -405,6 +410,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //If we have any changes in position or rotation, we send a messsage
                     if (Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
                         RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
+                        FileDebug.Log("\n[" + currentStamp + "] Server sent rpc.", "ServerLog");
                         //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
@@ -426,17 +432,17 @@ public class UNETFirstPersonController : NetworkBehaviour {
         state += "current position (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
         state += "current rotation (" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + ", " + transform.rotation.w + ")\n";
         state += "m_IsWalking "+m_IsWalking + "\n";
-        state += "m_RunSpeed " + m_RunSpeed + "\n";
-        state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
+        //state += "m_RunSpeed " + m_RunSpeed + "\n";
+        //state += "m_CrouchSpeed " + m_CrouchSpeed + "\n";
         state += "m_CrouchHeightDelta " + m_CrouchHeightDelta + "\n";
-        state += "m_JumpSpeed " + m_JumpSpeed + "\n";
-        state += "m_StickToGroundForce " + m_StickToGroundForce + "\n";
-        state += "m_GravityMultiplier " + m_GravityMultiplier + "\n";
+        //state += "m_JumpSpeed " + m_JumpSpeed + "\n";
+        //state += "m_StickToGroundForce " + m_StickToGroundForce + "\n";
+        //state += "m_GravityMultiplier " + m_GravityMultiplier + "\n";
         state += "m_firstPersonCharacter.rotation " + m_firstPersonCharacter.rotation + "\n";
-        state += "m_CrouchedHitboxCenterDelta " + m_CrouchedHitboxCenterDelta + "\n";
-        state += "m_CameraCrouchPosDelta " + m_CameraCrouchPosDelta + "\n";
-        state += "m_SlowdownFactor " + m_SlowdownFactor + "\n";
-        state += "m_StrafeSpeed " + m_StrafeSpeed + "\n";
+        //state += "m_CrouchedHitboxCenterDelta " + m_CrouchedHitboxCenterDelta + "\n";
+        //state += "m_CameraCrouchPosDelta " + m_CameraCrouchPosDelta + "\n";
+        //state += "m_SlowdownFactor " + m_SlowdownFactor + "\n";
+        //state += "m_StrafeSpeed " + m_StrafeSpeed + "\n";
         state += "m_Jump " + m_Jump + "\n";
         state += "m_isCrouching " + m_isCrouching + "\n";
         state += "m_PreviouslyCrouching " + m_PreviouslyCrouching + "\n";
@@ -445,8 +451,8 @@ public class UNETFirstPersonController : NetworkBehaviour {
         state += "m_CollisionFlags " + m_CollisionFlags + "\n";
         state += "m_PreviouslyGrounded " + m_PreviouslyGrounded + "\n";
         state += "m_Jumping " + m_Jumping + "\n";
-        state += "Physics.gravity " + Physics.gravity + "\n";
-        state += "Time.fixedDeltaTime " + Time.fixedDeltaTime + "\n";
+        //state += "Physics.gravity " + Physics.gravity + "\n";
+        //state += "Time.fixedDeltaTime " + Time.fixedDeltaTime + "\n";
         return state;
     }
 
