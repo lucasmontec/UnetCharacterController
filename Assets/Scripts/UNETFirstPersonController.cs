@@ -17,7 +17,6 @@ public struct Inputs {
     public bool crouch;
     public bool jump;
     public bool rotate;
-    public Vector3 calculatedPosition;
 
     public double timeStamp;
 }
@@ -242,18 +241,10 @@ public class UNETFirstPersonController : NetworkBehaviour {
             // Store collision values
             CollisionFlags lastFlag = m_CollisionFlags;
 
-            String pre = "", post = "";
-
             //If we have predicion, we use the input here to move the character
             if(prediction) {
-                if(isClient && !isServer) {
-                    pre = "\n[" + timestamp + "] Client state (pre movement) :\n" + getState();
-                }
                 //Move the player object
                 PlayerMovement(speed);
-                if(isClient && !isServer) {
-                    post = "\n[" + timestamp + "] Client state (post movement) :\n" + getState();
-                }
             }
 
             //Client sound and camera
@@ -281,15 +272,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.rotate = rotationChanged;
                     inputs.jump = sendJump;
                     inputs.crouch = m_isCrouching;
-                    inputs.calculatedPosition = transform.position;
                     inputs.timeStamp = timestamp;
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
-
-                    if(isClient) {
-                        FileDebug.Log(pre, "ClientLog");
-                        FileDebug.Log(post, "ClientLog");
-                    }
 
                     // DEBUG POSITION
                     dePos.velocity = m_CharacterController.velocity;
@@ -314,15 +299,13 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                     //Clear rotation flag
                     rotationChanged = false;
-
-                    //Debug.Log("InLst sz is: "+ inputsList.Count+ " Moved is: "+moved);
+                    
                 }
 
                 //Only send input at the network send interval
                 if(dataStep > GetNetworkSendInterval()) {
                     dataStep = 0;
 
-                    //Debug.Log("Sending messages to server");
                     int toSend = inputsList.Count;
                     //Send input to the server
                     if(inputsList.Count > 0) {
@@ -346,7 +329,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     if(Vector3.Distance(transform.position, prevPosition) > 0 || rotationChanged) {
                         //Send the current server pos to all clients
                         RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
-                        //Debug.Log("Sent host pos");
                     }
                 }
                 dataStep += Time.fixedDeltaTime;
@@ -357,9 +339,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
         */
         else { //If we are on the server, we process commands from the client instead, and generate update messages
             if(isServer) {
-                if(!m_PreviouslyGrounded && m_CharacterController.isGrounded) {
-                    FileDebug.Log("\n[" + currentStamp + "] Server grounded player.", "ServerLog");
-                }
 
                 //Store state
                 Vector3 lastPosition = transform.position;
@@ -369,10 +348,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                 //Create the struct to read possible input to calculate
                 Inputs inputs;
                 inputs.rotate = false;
-
-                if(transform.position != lastPos && !movedLastFrame) {
-                    FileDebug.Log("Server error!", "ServerLog");
-                }
 
                 //If we have inputs, get them and simulate on the server
                 if(inputsList.Count > 0) {
@@ -387,38 +362,19 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
                         //If need to, apply rotation
                         if(inputs.rotate) {
-                            FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
                             transform.rotation = Quaternion.Euler(transform.rotation.x, inputs.yaw, transform.rotation.z);
                             m_firstPersonCharacter.rotation = Quaternion.Euler(inputs.pitch, m_firstPersonCharacter.rotation.eulerAngles.y, m_firstPersonCharacter.rotation.eulerAngles.z);
                         }
 
                         //If need to, simulate movement
                         if(inputs.move) {
-                            FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
-                            lastPos = transform.position;
-                            CalcSpeed(out speed); //Server-side method to the speed out of input from clients
-
-                            //Debug state
-                            FileDebug.Log("\n[" + currentStamp + "] Server state (pre movement):\n" + getState(), "ServerLog");
-
+                            //Server-side method to the speed out of input from clients
+                            CalcSpeed(out speed);
                             //Move the player object
                             PlayerMovement(speed);
-
-                            movedLastFrame = transform.position != lastPos;
-
-                            //Debug state
-                            FileDebug.Log("\n[" + currentStamp + "] Server state (post movement):\n" + getState(), "ServerLog");
                         }
 
-                        //Position acceptance
-                        //TO-DO this is hardcoded and is a fix for a weird behavior. This is wrong.
-                        /*if (Vector3.Distance(transform.position, inputs.calculatedPosition) < 0.4f) {
-                            transform.position = inputs.calculatedPosition;
-                        }*/
                     }
-                }
-                else {
-                    FileDebug.Log("\n[" + currentStamp + "] Server input list empty.", "ServerLog");
                 }
 
                 //If its time to send messages
@@ -426,8 +382,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     //If we have any changes in position or rotation, we send a messsage
                     if(Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
                         RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
-                        FileDebug.Log("\n[" + currentStamp + "] Server sent rpc.", "ServerLog");
-                        //Debug.Log("Sent client pos "+dataStep + ", stamp: " + currentReconciliationStamp);
                     }
                     dataStep = 0;
 
@@ -481,9 +435,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
         //Add all inputs
         msg.inputsList.ForEach(e => inputsList.Enqueue(e));
-
-        //Debug.Log("Stamp of last input: " + stamp);
-        //Debug.Log("Current input list size: " + inputsList.Count);
 
         //Store the last received message
         lastMassageTime = msg.stamp;
@@ -642,12 +593,6 @@ public class UNETFirstPersonController : NetworkBehaviour {
         }
         //Calculate the side movement for strafing while in air
         Vector3 desiredStrafe = right * HorizontalMovement(m_Input[1], m_Input[3]);
-
-        // Get a normal for the surface that is being touched to move along it
-        /*RaycastHit hitInfo;
-        Physics.SphereCast(position, m_CharacterController.radius, Vector3.down, out hitInfo,
-                           m_CharacterController.height / 2f);
-        desiredMove = Vector3.ProjectOnPlane(desiredMove, hitInfo.normal).normalized;*/
 
         if(grounded) { //ON GROUND
             /*
