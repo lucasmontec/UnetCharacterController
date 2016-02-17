@@ -380,7 +380,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     
                     //If need to, simulate movement
                     if (inputs.move) {
-                        FileDebug.Log("\n[" + currentStamp + "] Server input with rotation.", "ServerLog");
+                        FileDebug.Log("\n[" + currentStamp + "] Server input with movement.", "ServerLog");
                         lastPos = transform.position;
                         CalcSpeed(out speed); //Server-side method to the speed out of input from clients
 
