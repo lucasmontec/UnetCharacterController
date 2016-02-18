@@ -112,17 +112,13 @@ public class UNETFirstPersonController : NetworkBehaviour {
 
     //This is to only send data to the players in an interval
     private float dataStep;
+    private bool movementToSend = false;
     private bool rotationChanged = false;
 
     //Reduce server and client simulation mismatch
     //This variable prevents the server from simulating a client when messages
     //are too late
     private double lastMassageTime = 0;
-    private const double maxDelayBeforeServerSimStop = 10000;
-
-    // To debug wrong movements in server
-    private bool movedLastFrame = true;
-    private Vector3 lastPos;
 
     //Local reconciliation (authority player)
     private struct ReconciliationEntry {
@@ -194,6 +190,9 @@ public class UNETFirstPersonController : NetworkBehaviour {
             if(m_CharacterController.isGrounded)
                 m_Jump |= CrossPlatformInputManager.GetButtonDown("Jump");
         }
+
+        //This checks if messages need to be sent
+        SendMessages();
     }
 
     string serverDebug = String.Empty;
@@ -217,7 +216,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
             //This must be before move to check if move grounded the character
             m_PreviouslyGrounded = m_CharacterController.isGrounded;
 
-            double timestamp = Network.time;
+            currentStamp = Network.time;
             //Store crouch input to send to server
             //We do this before reading input so that we can compare with the current crouch state
             bool sendCrouch = m_isCrouching;
@@ -273,7 +272,7 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     inputs.rotate = rotationChanged;
                     inputs.jump = sendJump;
                     inputs.crouch = m_isCrouching;
-                    inputs.timeStamp = timestamp;
+                    inputs.timeStamp = currentStamp;
                     inputsList.Enqueue(inputs);
                     debugMovement dePos = new debugMovement();
 
@@ -302,44 +301,23 @@ public class UNETFirstPersonController : NetworkBehaviour {
                     rotationChanged = false;
                     
                 }
-
-                //Only send input at the network send interval
-                if(dataStep > GetNetworkSendInterval()) {
-                    dataStep = 0;
-
-                    int toSend = inputsList.Count;
-                    //Send input to the server
-                    if(inputsList.Count > 0) {
-                        InputListMessage messageToSend = new InputListMessage();
-                        messageToSend.inputsList = new List<Inputs>(inputsList);
-                        connectionToServer.Send(InputListMessage.MSGID, messageToSend);
-
-                        //Clear the input list
-                        inputsList.Clear();
-                    }
-                }
-
-                dataStep += Time.fixedDeltaTime;
             }
 
-            //This is for the host player to send its position to all other clients
-            //HOST (THE CLIENT ON THE SERVER) CLIENT
-            if(isServer) {
-                if(dataStep > GetNetworkSendInterval()) {
-                    dataStep = 0;
-                    if(Vector3.Distance(transform.position, prevPosition) > 0 || rotationChanged) {
-                        //Send the current server pos to all clients
-                        RpcClientReceivePosition(timestamp, transform.position, m_MoveDir);
-                    }
+            //HOST CLIENT
+            if (isServer) {
+                if(Vector3.Distance(transform.position, prevPosition) > 0 || rotationChanged) {
+                    movementToSend = true;
                 }
-                dataStep += Time.fixedDeltaTime;
             }
+
+            //Thread.Sleep(7);
         }
         /*
         * SERVER SIDE
         */
         else { //If we are on the server, we process commands from the client instead, and generate update messages
             if(isServer) {
+                //Thread.Sleep(7);
                 //Store state
                 Vector3 lastPosition = transform.position;
                 Quaternion lastCharacterRotation = transform.rotation;
@@ -374,30 +352,80 @@ public class UNETFirstPersonController : NetworkBehaviour {
                             PlayerMovement(speed);
                         }
 
+                        //Check if something changed and store
+                        //This prevents movement skipping
+                        if(Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
+                            movementToSend = true;
+                        }
+
                     }
                 }
 
-                //If its time to send messages
-                if(dataStep > GetNetworkSendInterval()) {
-                    //If we have any changes in position or rotation, we send a messsage
-                    if(Vector3.Distance(transform.position, lastPosition) > 0 || inputs.rotate) {
-                        RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
-                    }
-                    dataStep = 0;
-
-                }
-                dataStep += Time.fixedDeltaTime;
                 m_PreviouslyGrounded = m_CharacterController.isGrounded;
             }
         }
     }
     //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>FIXED UPDATE
 
+    private void SendMessages() {
+        //Clients (local not server)
+        if(isLocalPlayer && !isServer) {
+            //Only send input at the network send interval
+            if (dataStep > GetNetworkSendInterval()) {
+                dataStep = 0;
+
+                int toSend = inputsList.Count;
+                //Send input to the server
+                if (inputsList.Count > 0) {
+                    InputListMessage messageToSend = new InputListMessage();
+                    messageToSend.inputsList = new List<Inputs>(inputsList);
+                    connectionToServer.Send(InputListMessage.MSGID, messageToSend);
+
+                    //Clear the input list
+                    inputsList.Clear();
+                }
+            }
+        }
+
+        //Host Client
+        if(isLocalPlayer && isServer) {
+            //This is for the host player to send its position to all other clients
+            //HOST (THE CLIENT ON THE SERVER) CLIENT
+            if (isServer) {
+                if (dataStep > GetNetworkSendInterval()) {
+                    dataStep = 0;
+                    if (movementToSend) {
+                        //Send the current server pos to all clients
+                        RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
+                        movementToSend = false;
+                    }
+                }
+            }
+        }
+
+        //Server dummies
+        if(!isLocalPlayer && isServer) {
+            //If its time to send messages
+            if (dataStep > GetNetworkSendInterval()) {
+                //If we have any changes in position or rotation, we send a messsage
+                if (movementToSend) {
+                    RpcClientReceivePosition(currentStamp, transform.position, m_MoveDir);
+                    movementToSend = false;
+                }
+                dataStep = 0;
+            }
+            
+        }
+
+        //Update data step
+        dataStep += Time.deltaTime;
+    }
+
     /// <summary>
     /// This is a debug method that gets all state variables that are involved in player movement.
     /// </summary>
     /// <returns>A string with all variables involved in player movement</returns>
-    private string getState() {
+    private string GetState() {
         string state = "";
         state += "current position (" + transform.position.x + ", " + transform.position.y + ", " + transform.position.z + ")\n";
         state += "current rotation (" + transform.rotation.x + ", " + transform.rotation.y + ", " + transform.rotation.z + ", " + transform.rotation.w + ")\n";
