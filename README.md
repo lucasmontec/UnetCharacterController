@@ -1,5 +1,7 @@
 # UnetCharacterController
 
+[SORRY!] I have closed the source code. This is just the draft for the controller. I'm using the new version for my games and because this is a really valuable resource I can't give the code away. If you need help developing your own please contac me on my email and I'll answer a few questions on how to handle things ;)
+
 ## Short description
 A Unity UNET based authoritative character controller with prediction, reconciliation and interpolation.
 
